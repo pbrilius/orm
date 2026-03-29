@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit bootstrap="tests/bootstrap.php"
+         colors="true"
+         stopOnFailure="false"
+         verbose="true"
+         stopOnError="true">
+    <testsuites>
+        <testsuite name="Unit">
+            <directory suffix="Test.php">./tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Integration">
+            <directory suffix="Test.php">./tests/Integration</directory>
+        </testsuite>
+    </testsuites>
+    <filter>
+        <whitelist processUncoveredFilesFromWhitelist="true">
+            <directory suffix=".php">./src</directory>
+        </whitelist>
+    </filter>
+    <php>
+        <env name="DB_DRIVER" value="sqlite"/>
+        <env name="DB_HOST" value=":memory:"/>
+        <env name="DB_NAME" value="testdb"/>
+        <env name="DB_USER" value=""/>
+        <env name="DB_PASSWORD" value=""/>
+    </php>
+</phpunit>
