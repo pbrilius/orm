@@ -17,7 +17,7 @@ class EntityManager
     private DoctrineEntityManager $em;
     private EmitterInterface $eventDispatcher;
 
-    public function __construct(Connection $connection, array $config = [], EmitterInterface $eventDispatcher = null)
+    public function __construct(Connection $connection, array $config = [], ?EmitterInterface $eventDispatcher = null)
     {
         $doctrineConfig = new Configuration();
         $driver = $config['metadata.driver'] ?? new AnnotationDriver([], false);
@@ -39,7 +39,7 @@ class EntityManager
 
     public function getRepository(string $entityName): ObjectRepository
     {
-        return new ObjectRepository($this->em, $entityName);
+        return new ObjectRepository($this, $entityName);
     }
 
     public function persist($entity): void
@@ -74,7 +74,7 @@ class EntityManager
         ]));
     }
 
-    public function clear(string $entityName = null): void
+    public function clear(?string $entityName = null): void
     {
         // Dispatch preClear event
         $this->eventDispatcher->emit(new Event('orm.preClear', [

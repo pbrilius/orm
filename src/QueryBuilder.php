@@ -15,7 +15,7 @@ class QueryBuilder
     }
 
     // SELECT operations
-    public function select(string $dqlAlias = null): self
+    public function select(?string $dqlAlias = null): self
     {
         $this->qb->select($dqlAlias);
         return $this;
@@ -28,7 +28,7 @@ class QueryBuilder
     }
 
     // FROM operations
-    public function from(string $class, string $alias = null, string $indexBy = null): self
+    public function from(string $class, ?string $alias = null, ?string $indexBy = null): self
     {
         $this->qb->from($class, $alias, $indexBy);
         return $this;
