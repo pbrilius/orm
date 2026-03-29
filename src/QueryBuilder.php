@@ -34,13 +34,13 @@ class QueryBuilder
         return $this;
     }
 
-    public function innerJoin(string $join, string $alias = null, string $condition = null, string $indexBy = null): self
+    public function innerJoin(string $join, ?string $alias = null, ?string $condition = null, ?string $indexBy = null): self
     {
         $this->qb->innerJoin($join, $alias, $condition, $indexBy);
         return $this;
     }
 
-    public function leftJoin(string $join, string $alias = null, string $condition = null, string $indexBy = null): self
+    public function leftJoin(string $join, ?string $alias = null, ?string $condition = null, ?string $indexBy = null): self
     {
         $this->qb->leftJoin($join, $alias, $condition, $indexBy);
         return $this;
