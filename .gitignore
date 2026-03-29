@@ -8,3 +8,6 @@ coverage/
 *.swp
 *.log
 composer.lock
+
+# prototype.in
+.php-cs-fixer.cache

@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace Oryx\ORM;
 
@@ -47,7 +49,7 @@ class EntityManager
         // Dispatch prePersist event
         $this->eventDispatcher->emit(new Event('orm.prePersist', [
             'entity' => $entity,
-            'entityManager' => $this
+            'entityManager' => $this,
         ]));
 
         $this->em->persist($entity);
@@ -55,7 +57,7 @@ class EntityManager
         // Dispatch postPersist event
         $this->eventDispatcher->emit(new Event('orm.postPersist', [
             'entity' => $entity,
-            'entityManager' => $this
+            'entityManager' => $this,
         ]));
     }
 
@@ -63,14 +65,14 @@ class EntityManager
     {
         // Dispatch preFlush event
         $this->eventDispatcher->emit(new Event('orm.preFlush', [
-            'entityManager' => $this
+            'entityManager' => $this,
         ]));
 
         $this->em->flush();
 
         // Dispatch postFlush event
         $this->eventDispatcher->emit(new Event('orm.postFlush', [
-            'entityManager' => $this
+            'entityManager' => $this,
         ]));
     }
 
@@ -79,7 +81,7 @@ class EntityManager
         // Dispatch preClear event
         $this->eventDispatcher->emit(new Event('orm.preClear', [
             'entityName' => $entityName,
-            'entityManager' => $this
+            'entityManager' => $this,
         ]));
 
         $this->em->clear($entityName);
@@ -87,7 +89,7 @@ class EntityManager
         // Dispatch postClear event
         $this->eventDispatcher->emit(new Event('orm.postClear', [
             'entityName' => $entityName,
-            'entityManager' => $this
+            'entityManager' => $this,
         ]));
     }
 
