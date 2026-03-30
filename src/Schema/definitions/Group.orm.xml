@@ -9,7 +9,6 @@
         </id>
         <field name="name" type="string" length="255"/>
         <field name="createdAt" type="datetime"/>
-        <!-- Relation to Users (inverse side) -->
         <one-to-many target-entity="App\Entity\User" field="users" mapped-by="group"/>
     </entity>
 </doctrine-mapping>
