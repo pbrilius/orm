@@ -26,10 +26,8 @@ class EntityManager
         $driver = $config['metadata.driver'] ?? new AnnotationDriver(new \Doctrine\Common\Annotations\AnnotationReader(), false);
         $doctrineConfig->setMetadataDriverImpl($driver);
 
-        // Proxy configuration
-        $doctrineConfig->setAutoGenerateProxyClasses(ProxyFactory::AUTOGENERATE_ALWAYS);
-        $doctrineConfig->setProxyDir(sys_get_temp_dir());
-        $doctrineConfig->setProxyNamespace('Oryx\ORM\Proxy');
+        // Proxy configuration - disabled as requested
+        $doctrineConfig->setAutoGenerateProxyClasses(ProxyFactory::AUTOGENERATE_NEVER);
 
         $this->em = DoctrineEntityManager::create($connection, $doctrineConfig);
         $this->eventDispatcher = $eventDispatcher ?? new Emitter();
