@@ -5,10 +5,11 @@
 2. [Architecture Overview](#2-architecture-overview)
 3. [MVC Pattern (Vanilla PHP)](#3-mvc-pattern-vanilla-php)
 4. [ADR Pattern (laminas/diactoros)](#4-adr-pattern-laminasdiactoros)
-5. [League Factory Muffin Fixtures](#5-league-factory-muffin-fixtures)
-6. [PSR Middleware Security](#6-psr-middleware-security)
-7. [HAL+JSON API](#7-haljson-api)
-8. [Running the Application](#9-running-the-application)
+5. [League Fractal Transformers](#5-league-fractal-transformers)
+6. [League Factory Muffin Fixtures](#6-league-factory-muffin-fixtures)
+7. [PSR Middleware Security](#7-psr-middleware-security)
+8. [HAL+JSON API](#8-haljson-api)
+9. [Running the Application](#9-running-the-application)
 
 ---
 
