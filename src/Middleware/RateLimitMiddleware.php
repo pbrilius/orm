@@ -65,10 +65,10 @@ class RateLimitMiddleware implements MiddlewareInterface
 
     private function getKey(ServerRequestInterface $request): string
     {
-        $ip = $request->getHeaderLine('X-Forwarded-For') 
+        $ip = $request->getHeaderLine('X-Forwarded-For')
             ?: $request->getHeaderLine('X-Real-IP')
             ?: 'unknown';
-        
+
         return $ip;
     }
 

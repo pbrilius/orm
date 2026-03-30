@@ -35,14 +35,14 @@ class CorsMiddleware implements MiddlewareInterface
         }
 
         $response = $handler->handle($request);
-        
+
         return $this->addCorsHeaders($response, $request);
     }
 
     private function getCorsHeaders(ServerRequestInterface $request): array
     {
         $origin = $request->getHeaderLine('Origin');
-        
+
         return [
             'Access-Control-Allow-Origin' => $this->getAllowedOrigin($origin),
             'Access-Control-Allow-Methods' => implode(', ', $this->allowedMethods),
@@ -55,7 +55,7 @@ class CorsMiddleware implements MiddlewareInterface
     private function addCorsHeaders(ResponseInterface $response, ServerRequestInterface $request): ResponseInterface
     {
         $origin = $request->getHeaderLine('Origin');
-        
+
         return $response
             ->withHeader('Access-Control-Allow-Origin', $this->getAllowedOrigin($origin))
             ->withHeader('Access-Control-Expose-Headers', 'X-Request-Id, X-RateLimit-Remaining');
