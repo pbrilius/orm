@@ -28,6 +28,8 @@ class EntityManager
 
         // Proxy configuration - disabled as requested
         $doctrineConfig->setAutoGenerateProxyClasses(ProxyFactory::AUTOGENERATE_NEVER);
+        $doctrineConfig->setProxyDir(sys_get_temp_dir());
+        $doctrineConfig->setProxyNamespace('Oryx\ORM\Proxy');
 
         $this->em = DoctrineEntityManager::create($connection, $doctrineConfig);
         $this->eventDispatcher = $eventDispatcher ?? new Emitter();
