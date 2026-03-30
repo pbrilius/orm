@@ -113,20 +113,54 @@ class Router
 // src/Controller/UserController.php
 namespace App\Controller;
 
+use App\Entity\User;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 class UserController
 {
     private EntityManagerInterface $em;
+    private UserRepository $repository;
 
     public function __construct(EntityManagerInterface $em)
     {
         $this->em = $em;
+        $this->repository = new UserRepository($em);
     }
 
     public function index(): array
     {
-        return ['users' => $this->repository->findAll()];
+        $users = $this->repository->findAll();
+        return ['users' => $users];
+    }
+
+    public function show(int $id): ?User
+    {
+        return $this->repository->find($id);
+    }
+
+    public function create(array $data): User
+    {
+        $user = new User();
+        $user->setEmail($data['email']);
+        $user->setPassword(password_hash($data['password'] ?? '', PASSWORD_BCRYPT));
+        $user->setRoles($data['roles'] ?? ['ROLE_USER']);
+
+        $this->em->persist($user);
+        $this->em->flush();
+
+        return $user;
+    }
+
+    public function delete(int $id): bool
+    {
+        $user = $this->repository->find($id);
+        if (!$user) {
+            return false;
+        }
+        $this->em->remove($user);
+        $this->em->flush();
+        return true;
     }
 }
 ```
@@ -241,6 +275,7 @@ namespace App\Routing;
 use App\Http\Router;
 use App\Http\Request;
 use App\Http\Response;
+use App\View\ViewRenderer;
 use App\Controller\UserController;
 use Doctrine\ORM\EntityManager;
 
@@ -248,10 +283,12 @@ class MvcRoutes
 {
     private Router $router;
     private array $controllers;
+    private ViewRenderer $view;
 
     public function __construct(EntityManager $em)
     {
         $this->router = new Router();
+        $this->view = new ViewRenderer();
         $this->controllers = [
             'user' => new UserController($em),
         ];
@@ -1156,7 +1193,7 @@ private function register(): void
 }
 ```
 
-**MVC maršrutai (MvcRoutes.php):**
+**MVC maršrutai (MvcRoutes.php) - žr. pilną pavyzdį §4.1:**
 ```php
 private function register(): void
 {
