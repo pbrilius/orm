@@ -298,6 +298,42 @@ class UserTransformer extends TransformerAbstract
 }
 ```
 
+### League/Factory-Muffin Fixtures
+
+Create test fixtures easily using Factory Muffin:
+
+```php
+// tests/factories/user.factories.php
+use App\Entity\User;
+
+$fm->define(User::class)->setDefinitions([
+    'email' => 'user{++}@example.com',
+    'password' => 'password123',
+    'roles' => ['ROLE_USER'],
+    'createdAt' => fn() => new \DateTimeImmutable(),
+]);
+```
+
+Using FixtureLoader in tests:
+
+```php
+use App\Fixture\FixtureLoader;
+use App\Entity\User;
+
+$loader = new FixtureLoader();
+
+// Create single instance
+$user = $loader->make(User::class);
+
+// Create multiple instances
+$users = $loader->makeMany(User::class, 10);
+
+// With EntityManager for persistence
+$em = $entityManager; // Doctrine EntityManager
+$loader = new FixtureLoader($em);
+$user = $loader->createAndPersist(User::class);
+```
+
 ---
 
 ## 🔮 RESTful vs AJAX: The Great Debate
