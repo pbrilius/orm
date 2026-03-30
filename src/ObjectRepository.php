@@ -22,7 +22,7 @@ class ObjectRepository
         $this->repository = $this->em->getDoctrineEntityManager()->getRepository($entityName);
     }
 
-    public function find($id)
+    public function find(mixed $id): ?object
     {
         return $this->repository->find($id);
     }

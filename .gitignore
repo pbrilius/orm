@@ -1,6 +1,5 @@
 /vendor/
 /.env
-.phpunit.result.cache
 reports/
 coverage/
 .idea/
@@ -12,3 +11,5 @@ composer.lock
 # prototype.in
 .php-cs-fixer.cache
 .php-cs-fixer.dist.php
+phpunit.xml.dist
+.phpunit.result.cache

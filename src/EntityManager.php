@@ -10,6 +10,7 @@ use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Configuration;
 use Doctrine\ORM\Mapping\Driver\AnnotationDriver;
 use Doctrine\ORM\Proxy\ProxyFactory;
+use Doctrine\Common\Annotations\AnnotationReader;
 use League\Event\Emitter;
 use League\Event\Event;
 use League\Event\EmitterInterface;
@@ -22,7 +23,8 @@ class EntityManager
     public function __construct(Connection $connection, array $config = [], ?EmitterInterface $eventDispatcher = null)
     {
         $doctrineConfig = new Configuration();
-        $driver = $config['metadata.driver'] ?? new AnnotationDriver([], false);
+        /** @psalm-suppress DeprecatedClass */
+        $driver = $config['metadata.driver'] ?? new AnnotationDriver(new \Doctrine\Common\Annotations\AnnotationReader(), false);
         $doctrineConfig->setMetadataDriverImpl($driver);
 
         // Proxy configuration
