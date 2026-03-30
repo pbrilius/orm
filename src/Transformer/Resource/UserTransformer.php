@@ -23,7 +23,7 @@ class UserTransformer extends TransformerAbstract
     public function transform(User $user): array
     {
         return [
-            'id' => $user->getId(),
+            'id' => $user->getId() ?? 0,
             'email' => $user->getEmail(),
             'roles' => $user->getRoles(),
             'created_at' => $user->getCreatedAt()->format('c'),

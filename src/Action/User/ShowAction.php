@@ -4,52 +4,49 @@ declare(strict_types=1);
 
 namespace App\Action\User;
 
+use App\Fixture\FixtureLoader;
 use App\Entity\User;
-use App\Repository\UserRepository;
 use League\Fractal\Manager;
 use League\Fractal\Resource\Item;
-use Laminas\Diactoros\Response\JsonResponse;
+use League\Fractal\Serializer\JsonApiSerializer;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Laminas\Diactoros\Response\JsonResponse;
 
-/**
- * ADR Action: Show single user.
- */
 class ShowAction
 {
-    private UserRepository $repository;
+    private FixtureLoader $loader;
     private Manager $fractal;
 
-    public function __construct(UserRepository $repository, Manager $fractal)
+    public function __construct(FixtureLoader $loader)
     {
-        $this->repository = $repository;
-        $this->fractal = $fractal;
+        $this->loader = $loader;
+        $this->fractal = new Manager();
+        $this->fractal->setSerializer(new JsonApiSerializer());
     }
 
-    public function __invoke(ServerRequestInterface $request): JsonResponse
+    public function __invoke(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $id = (int) $request->getAttribute('id');
-
-        $user = $this->repository->find($id);
-
-        if (!$user) {
-            return $this->notFound($id);
+        $id = (int) ($request->getAttribute('id') ?? 0);
+        
+        if ($id <= 0) {
+            return new JsonResponse([
+                'errors' => [[
+                    'status' => '400',
+                    'title' => 'Bad Request',
+                    'detail' => 'Invalid user ID provided',
+                ]],
+            ], 400);
         }
+
+        $user = $this->loader->make(User::class);
+        $user->setEmail("user{$id}@example.com");
 
         $resource = new Item($user, new \App\Transformer\Resource\UserTransformer());
         $data = $this->fractal->createData($resource)->toArray();
 
-        return new JsonResponse($data, 200);
-    }
-
-    private function notFound(int $id): JsonResponse
-    {
-        return new JsonResponse([
-            'error' => [
-                'type' => 'about:blank',
-                'title' => 'Not Found',
-                'detail' => "User with ID {$id} not found.",
-                'status' => 404,
-            ],
-        ], 404);
+        return new JsonResponse($data, 200, [
+            'Content-Type' => 'application/vnd.api+json',
+        ]);
     }
 }

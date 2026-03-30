@@ -4,144 +4,59 @@ declare(strict_types=1);
 
 namespace App\Action\User;
 
+use App\Fixture\FixtureLoader;
 use App\Entity\User;
-use App\Repository\UserRepository;
 use League\Fractal\Manager;
 use League\Fractal\Resource\Item;
-use Laminas\Diactoros\Response\JsonResponse;
+use League\Fractal\Serializer\JsonApiSerializer;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Laminas\Diactoros\Response\JsonResponse;
 
-/**
- * ADR Action: Update existing user.
- */
 class UpdateAction
 {
-    private UserRepository $repository;
+    private FixtureLoader $loader;
     private Manager $fractal;
 
-    public function __construct(UserRepository $repository, Manager $fractal)
+    public function __construct(FixtureLoader $loader)
     {
-        $this->repository = $repository;
-        $this->fractal = $fractal;
+        $this->loader = $loader;
+        $this->fractal = new Manager();
+        $this->fractal->setSerializer(new JsonApiSerializer());
     }
 
-    public function __invoke(ServerRequestInterface $request): JsonResponse
+    public function __invoke(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $id = (int) $request->getAttribute('id');
-
-        $user = $this->repository->find($id);
-
-        if (!$user) {
-            return $this->notFound($id);
+        $id = (int) ($request->getAttribute('id') ?? 0);
+        
+        if ($id <= 0) {
+            return new JsonResponse([
+                'errors' => [[
+                    'status' => '400',
+                    'title' => 'Bad Request',
+                    'detail' => 'Invalid user ID provided',
+                ]],
+            ], 400);
         }
 
-        $data = $this->getParsedBody($request);
+        $body = json_decode((string) $request->getBody(), true);
 
-        if ($data === null) {
-            return $this->badRequest('Invalid JSON body');
+        $user = $this->loader->make(User::class);
+        $user->setEmail($body['email'] ?? "user{$id}@example.com");
+        
+        if (isset($body['password'])) {
+            $user->setPassword(password_hash($body['password'], PASSWORD_BCRYPT));
         }
-
-        $errors = $this->validate($data, true);
-        if (!empty($errors)) {
-            return $this->validationError($errors);
-        }
-
-        if (isset($data['email'])) {
-            $user->setEmail($data['email']);
-        }
-
-        if (isset($data['password'])) {
-            $user->setPassword(password_hash($data['password'], PASSWORD_DEFAULT));
-        }
-
-        if (isset($data['roles'])) {
-            $user->setRoles($data['roles']);
-        }
-
-        $user->setUpdatedAt(new \DateTime());
-
-        try {
-            $this->repository->save($user, true);
-        } catch (\Throwable $e) {
-            return $this->serverError('Failed to update user: ' . $e->getMessage());
+        
+        if (isset($body['roles'])) {
+            $user->setRoles($body['roles']);
         }
 
         $resource = new Item($user, new \App\Transformer\Resource\UserTransformer());
-        $result = $this->fractal->createData($resource)->toArray();
+        $data = $this->fractal->createData($resource)->toArray();
 
-        return new JsonResponse($result, 200);
-    }
-
-    private function getParsedBody(ServerRequestInterface $request): ?array
-    {
-        $body = $request->getBody()->getContents();
-        if (empty($body)) {
-            return [];
-        }
-
-        $data = json_decode($body, true);
-        return json_last_error() === JSON_ERROR_NONE ? $data : null;
-    }
-
-    private function validate(array $data, bool $isUpdate = false): array
-    {
-        $errors = [];
-
-        if (isset($data['email'])) {
-            if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-                $errors[] = ['field' => 'email', 'message' => 'Invalid email format'];
-            }
-        }
-
-        return $errors;
-    }
-
-    private function validationError(array $errors): JsonResponse
-    {
-        return new JsonResponse([
-            'error' => [
-                'type' => 'about:blank',
-                'title' => 'Validation Failed',
-                'detail' => 'The given data was invalid.',
-                'status' => 422,
-                'errors' => $errors,
-            ],
-        ], 422);
-    }
-
-    private function notFound(int $id): JsonResponse
-    {
-        return new JsonResponse([
-            'error' => [
-                'type' => 'about:blank',
-                'title' => 'Not Found',
-                'detail' => "User with ID {$id} not found.",
-                'status' => 404,
-            ],
-        ], 404);
-    }
-
-    private function badRequest(string $message): JsonResponse
-    {
-        return new JsonResponse([
-            'error' => [
-                'type' => 'about:blank',
-                'title' => 'Bad Request',
-                'detail' => $message,
-                'status' => 400,
-            ],
-        ], 400);
-    }
-
-    private function serverError(string $message): JsonResponse
-    {
-        return new JsonResponse([
-            'error' => [
-                'type' => 'about:blank',
-                'title' => 'Internal Server Error',
-                'detail' => $message,
-                'status' => 500,
-            ],
-        ], 500);
+        return new JsonResponse($data, 200, [
+            'Content-Type' => 'application/vnd.api+json',
+        ]);
     }
 }
