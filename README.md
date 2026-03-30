@@ -426,13 +426,32 @@ class ListAction
 
 **CRUD Endpoints:**
 
-| Method | Endpoint | Action | Response |
-|--------|----------|--------|----------|
-| `GET` | `/api/users` | ListAction | `200 + JSON:API collection` |
-| `GET` | `/api/users/{id}` | ShowAction | `200 + JSON:API item` |
-| `POST` | `/api/users` | CreateAction | `201 + JSON:API item` |
-| `PUT` | `/api/users/{id}` | UpdateAction | `200 + JSON:API item` |
-| `DELETE` | `/api/users/{id}` | DeleteAction | `204 No Content` |
+| Method | Endpoint | Action | Response | Use Case |
+|--------|----------|--------|----------|----------|
+| `GET` | `/api/users` | ListAction | `200 + JSON:API collection` | List all users |
+| `GET` | `/api/users/{id}` | ShowAction | `200 + JSON:API item` | Get single user |
+| `POST` | `/api/users` | CreateAction | `201 + JSON:API item` | Create new user |
+| `PUT` | `/api/users/{id}` | UpdateAction | `200 + JSON:API item` | Full update (REST) |
+| `PATCH` | `/api/users/{id}` | PatchAction | `200 + JSON:API item` | Partial update (AJAX) |
+| `DELETE` | `/api/users/{id}` | DeleteAction | `204 No Content` | Delete user |
+
+**PUT vs PATCH Example:**
+
+```bash
+# PUT - Full replacement (RESTful)
+PUT /api/users/1
+{
+  "email": "new@example.com",
+  "password": "secret",
+  "roles": ["ROLE_USER"]
+}
+
+# PATCH - Partial update (AJAX/SPAs)
+PATCH /api/users/1
+{
+  "email": "patched@example.com"
+}
+```
 
 **JSON:API Response Format:**
 

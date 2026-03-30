@@ -18,6 +18,7 @@ use App\Action\User\ListAction;
 use App\Action\User\ShowAction;
 use App\Action\User\CreateAction;
 use App\Action\User\UpdateAction;
+use App\Action\User\PatchAction;
 use App\Action\User\DeleteAction;
 use App\Repository\UserRepository;
 use League\Fractal\Manager as FractalManager;
@@ -137,6 +138,7 @@ class Kernel
         $this->router->map('POST', '/api/users', [CreateAction::class, '__invoke']);
         $this->router->map('GET', '/api/users/{id}', [ShowAction::class, '__invoke']);
         $this->router->map('PUT', '/api/users/{id}', [UpdateAction::class, '__invoke']);
+        $this->router->map('PATCH', '/api/users/{id}', [PatchAction::class, '__invoke']);
         $this->router->map('DELETE', '/api/users/{id}', [DeleteAction::class, '__invoke']);
 
         $this->router->map('GET', '/manifest.json', function (ServerRequestInterface $request): ResponseInterface {

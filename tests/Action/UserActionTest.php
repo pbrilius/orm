@@ -9,6 +9,7 @@ use App\Action\User\ListAction;
 use App\Action\User\ShowAction;
 use App\Action\User\CreateAction;
 use App\Action\User\UpdateAction;
+use App\Action\User\PatchAction;
 use App\Action\User\DeleteAction;
 use App\Fixture\FixtureLoader;
 use Laminas\Diactoros\ServerRequest;
@@ -20,6 +21,7 @@ class UserActionTest extends TestCase
     private ShowAction $showAction;
     private CreateAction $createAction;
     private UpdateAction $updateAction;
+    private PatchAction $patchAction;
     private DeleteAction $deleteAction;
 
     protected function setUp(): void
@@ -30,6 +32,7 @@ class UserActionTest extends TestCase
         $this->showAction = new ShowAction($loader);
         $this->createAction = new CreateAction($loader);
         $this->updateAction = new UpdateAction($loader);
+        $this->patchAction = new PatchAction($loader);
         $this->deleteAction = new DeleteAction();
     }
 
@@ -133,6 +136,45 @@ class UserActionTest extends TestCase
 
         $this->assertEquals(200, $result->getStatusCode());
         $this->assertEquals('application/vnd.api+json', $result->getHeaderLine('Content-Type'));
+    }
+
+    public function testPatchActionReturns200(): void
+    {
+        $data = [
+            'email' => 'patched@example.com',
+        ];
+        
+        $stream = new \Laminas\Diactoros\Stream('php://memory', 'w+');
+        $stream->write(json_encode($data));
+        $stream->rewind();
+        
+        $request = new ServerRequest();
+        $request = $request->withMethod('PATCH');
+        $request = $request->withAttribute('id', '1');
+        $request = $request->withBody($stream);
+        $response = new Response();
+
+        $result = ($this->patchAction)($request, $response);
+
+        $this->assertEquals(200, $result->getStatusCode());
+        $this->assertEquals('application/vnd.api+json', $result->getHeaderLine('Content-Type'));
+    }
+
+    public function testPatchActionWithEmptyBodyReturns422(): void
+    {
+        $stream = new \Laminas\Diactoros\Stream('php://memory', 'w+');
+        $stream->write('{}');
+        $stream->rewind();
+        
+        $request = new ServerRequest();
+        $request = $request->withMethod('PATCH');
+        $request = $request->withAttribute('id', '1');
+        $request = $request->withBody($stream);
+        $response = new Response();
+
+        $result = ($this->patchAction)($request, $response);
+
+        $this->assertEquals(422, $result->getStatusCode());
     }
 
     public function testDeleteActionReturns204(): void
