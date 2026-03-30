@@ -11,3 +11,4 @@ composer.lock
 
 # prototype.in
 .php-cs-fixer.cache
+.php-cs-fixer.dist.php
