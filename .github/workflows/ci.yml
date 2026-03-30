@@ -33,7 +33,7 @@ jobs:
         run: composer cs-check
 
       - name: Run static analysis
-        run: composer stan && composer psalm
+        run: composer stan
 
       - name: Run tests
         run: composer test

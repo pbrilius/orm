@@ -23,7 +23,6 @@ class EntityManager
     public function __construct(Connection $connection, array $config = [], ?EmitterInterface $eventDispatcher = null)
     {
         $doctrineConfig = new Configuration();
-        /** @psalm-suppress DeprecatedClass */
         $driver = $config['metadata.driver'] ?? new AnnotationDriver(new \Doctrine\Common\Annotations\AnnotationReader(), false);
         $doctrineConfig->setMetadataDriverImpl($driver);
 

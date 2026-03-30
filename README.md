@@ -9,7 +9,7 @@ DQL-centric ORM for PHP 8.0+ with seamless integration to oryx/mvc and oryx/adr 
 - League package integration (Config, Event, Pipeline, Tactician, etc.)
 - Symfony Dotenv for environment configuration
 - Full PSR-12 code style compliance
-- Comprehensive test suite with PHPUnit, Mockery, PHPStan & Psalm
+- Comprehensive test suite with PHPUnit, Mockery & PHPStan
 
 ## Requirements
 
@@ -64,7 +64,6 @@ composer cs-fix
 
 # Run static analysis
 composer stan
-composer psalm
 
 # Run tests
 composer test
