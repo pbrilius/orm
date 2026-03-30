@@ -26,8 +26,8 @@ class EntityManager
         $driver = $config['metadata.driver'] ?? new AnnotationDriver(new \Doctrine\Common\Annotations\AnnotationReader(), false);
         $doctrineConfig->setMetadataDriverImpl($driver);
 
-        // Proxy configuration
-        $doctrineConfig->setAutoGenerateProxyClasses(ProxyFactory::AUTOGENERATE_ALWAYS);
+        // Proxy configuration - disabled as requested
+        $doctrineConfig->setAutoGenerateProxyClasses(ProxyFactory::AUTOGENERATE_NEVER);
         $doctrineConfig->setProxyDir(sys_get_temp_dir());
         $doctrineConfig->setProxyNamespace('Oryx\ORM\Proxy');
 
