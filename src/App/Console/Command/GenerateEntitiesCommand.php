@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Console\Command;
@@ -50,7 +51,7 @@ class GenerateEntitiesCommand extends Command
                 null,
                 InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
                 'Generate only the classes matching the filter. '
-                .'A filter could be a namespace (ending with \*) or a class name.'
+                . 'A filter could be a namespace (ending with \*) or a class name.'
             )
             ->addOption(
                 'no-backup',
