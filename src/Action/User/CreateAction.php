@@ -42,7 +42,7 @@ class CreateAction
         $user = $this->loader->make(User::class);
         $user->setEmail($body['email']);
         $user->setPassword(password_hash($body['password'], PASSWORD_BCRYPT));
-        
+
         if (isset($body['roles'])) {
             $user->setRoles($body['roles']);
         }

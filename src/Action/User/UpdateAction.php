@@ -28,7 +28,7 @@ class UpdateAction
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $id = (int) ($request->getAttribute('id') ?? 0);
-        
+
         if ($id <= 0) {
             return new JsonResponse([
                 'errors' => [[
@@ -43,11 +43,11 @@ class UpdateAction
 
         $user = $this->loader->make(User::class);
         $user->setEmail($body['email'] ?? "user{$id}@example.com");
-        
+
         if (isset($body['password'])) {
             $user->setPassword(password_hash($body['password'], PASSWORD_BCRYPT));
         }
-        
+
         if (isset($body['roles'])) {
             $user->setRoles($body['roles']);
         }

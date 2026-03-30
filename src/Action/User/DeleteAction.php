@@ -13,7 +13,7 @@ class DeleteAction
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $id = (int) ($request->getAttribute('id') ?? 0);
-        
+
         if ($id <= 0) {
             return new JsonResponse([
                 'errors' => [[

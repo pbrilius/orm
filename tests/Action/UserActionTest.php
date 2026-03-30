@@ -27,7 +27,7 @@ class UserActionTest extends TestCase
     protected function setUp(): void
     {
         $loader = new FixtureLoader();
-        
+
         $this->listAction = new ListAction($loader);
         $this->showAction = new ShowAction($loader);
         $this->createAction = new CreateAction($loader);
@@ -45,7 +45,7 @@ class UserActionTest extends TestCase
 
         $this->assertEquals(200, $result->getStatusCode());
         $this->assertEquals('application/vnd.api+json', $result->getHeaderLine('Content-Type'));
-        
+
         $body = json_decode((string) $result->getBody(), true);
         $this->assertArrayHasKey('data', $body);
         $this->assertIsArray($body['data']);
@@ -61,7 +61,7 @@ class UserActionTest extends TestCase
 
         $this->assertEquals(200, $result->getStatusCode());
         $this->assertEquals('application/vnd.api+json', $result->getHeaderLine('Content-Type'));
-        
+
         $body = json_decode((string) $result->getBody(), true);
         $this->assertArrayHasKey('data', $body);
     }
@@ -84,11 +84,11 @@ class UserActionTest extends TestCase
             'password' => 'secret123',
             'roles' => ['ROLE_USER'],
         ];
-        
+
         $stream = new \Laminas\Diactoros\Stream('php://memory', 'w+');
         $stream->write(json_encode($data));
         $stream->rewind();
-        
+
         $request = new ServerRequest();
         $request = $request->withMethod('POST');
         $request = $request->withBody($stream);
@@ -105,7 +105,7 @@ class UserActionTest extends TestCase
         $body = json_encode([
             'password' => 'secret123',
         ]);
-        
+
         $request = new ServerRequest();
         $request = $request->withMethod('POST');
         $request = $request->withBody(new \Laminas\Diactoros\Stream('php://memory', 'w+', [], $body));
@@ -121,11 +121,11 @@ class UserActionTest extends TestCase
         $data = [
             'email' => 'updated@example.com',
         ];
-        
+
         $stream = new \Laminas\Diactoros\Stream('php://memory', 'w+');
         $stream->write(json_encode($data));
         $stream->rewind();
-        
+
         $request = new ServerRequest();
         $request = $request->withMethod('PUT');
         $request = $request->withAttribute('id', '1');
@@ -143,11 +143,11 @@ class UserActionTest extends TestCase
         $data = [
             'email' => 'patched@example.com',
         ];
-        
+
         $stream = new \Laminas\Diactoros\Stream('php://memory', 'w+');
         $stream->write(json_encode($data));
         $stream->rewind();
-        
+
         $request = new ServerRequest();
         $request = $request->withMethod('PATCH');
         $request = $request->withAttribute('id', '1');
@@ -165,7 +165,7 @@ class UserActionTest extends TestCase
         $stream = new \Laminas\Diactoros\Stream('php://memory', 'w+');
         $stream->write('{}');
         $stream->rewind();
-        
+
         $request = new ServerRequest();
         $request = $request->withMethod('PATCH');
         $request = $request->withAttribute('id', '1');
