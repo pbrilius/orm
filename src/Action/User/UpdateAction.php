@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Action\User;
@@ -27,15 +28,15 @@ class UpdateAction
     public function __invoke(ServerRequestInterface $request): JsonResponse
     {
         $id = (int) $request->getAttribute('id');
-        
+
         $user = $this->repository->find($id);
-        
+
         if (!$user) {
             return $this->notFound($id);
         }
 
         $data = $this->getParsedBody($request);
-        
+
         if ($data === null) {
             return $this->badRequest('Invalid JSON body');
         }
@@ -48,15 +49,15 @@ class UpdateAction
         if (isset($data['email'])) {
             $user->setEmail($data['email']);
         }
-        
+
         if (isset($data['password'])) {
             $user->setPassword(password_hash($data['password'], PASSWORD_DEFAULT));
         }
-        
+
         if (isset($data['roles'])) {
             $user->setRoles($data['roles']);
         }
-        
+
         $user->setUpdatedAt(new \DateTime());
 
         try {
@@ -77,7 +78,7 @@ class UpdateAction
         if (empty($body)) {
             return [];
         }
-        
+
         $data = json_decode($body, true);
         return json_last_error() === JSON_ERROR_NONE ? $data : null;
     }
@@ -85,7 +86,7 @@ class UpdateAction
     private function validate(array $data, bool $isUpdate = false): array
     {
         $errors = [];
-        
+
         if (isset($data['email'])) {
             if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
                 $errors[] = ['field' => 'email', 'message' => 'Invalid email format'];

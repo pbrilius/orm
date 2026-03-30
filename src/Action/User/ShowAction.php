@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Action\User;
@@ -27,9 +28,9 @@ class ShowAction
     public function __invoke(ServerRequestInterface $request): JsonResponse
     {
         $id = (int) $request->getAttribute('id');
-        
+
         $user = $this->repository->find($id);
-        
+
         if (!$user) {
             return $this->notFound($id);
         }

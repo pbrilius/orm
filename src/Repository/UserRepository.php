@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Repository;
@@ -10,7 +11,7 @@ use Doctrine\ORM\Mapping\ClassMetadata;
 
 /**
  * Repository for User entity.
- * 
+ *
  * @extends EntityRepository<User>
  */
 class UserRepository extends EntityRepository

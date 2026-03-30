@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Action\User;
@@ -61,7 +62,7 @@ class CreateAction
         if (empty($body)) {
             return [];
         }
-        
+
         $data = json_decode($body, true);
         return json_last_error() === JSON_ERROR_NONE ? $data : null;
     }
@@ -69,13 +70,13 @@ class CreateAction
     private function validate(array $data): array
     {
         $errors = [];
-        
+
         if (empty($data['email'])) {
             $errors[] = ['field' => 'email', 'message' => 'Email is required'];
         } elseif (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
             $errors[] = ['field' => 'email', 'message' => 'Invalid email format'];
         }
-        
+
         if (empty($data['password'])) {
             $errors[] = ['field' => 'password', 'message' => 'Password is required'];
         }

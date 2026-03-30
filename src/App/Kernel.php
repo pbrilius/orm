@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App;
@@ -25,7 +26,7 @@ use Oryx\ORM\EntityManagerFactory;
 
 /**
  * Application Kernel - integrates Oryx MVC + ADR patterns.
- * 
+ *
  * This kernel provides:
  * - League Route for routing
  * - ADR pattern for Actions/Responders
@@ -50,7 +51,7 @@ class Kernel
         $this->container = new Container();
         $this->router = new Router();
         $this->dispatcher = new EventDispatcher();
-        
+
         $this->boot();
     }
 
