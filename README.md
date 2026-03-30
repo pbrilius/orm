@@ -1,77 +1,269 @@
-# oryx/orm Web Skeleton
+# Oryx ORM Web Skeleton
 
-DQL-centric ORM for PHP 8.2+ with seamless integration to **oryx/mvc** and **oryx/adr** architectures.
+## 🧙‍♂️ The Oryx Cathedral: A PHP Apprentice's Guide
 
-## Features
+Welcome, young wizard! In this enchanted chronicle, you shall learn the ancient arts of **Oryx ORM**, **MVC**, and **ADR** patterns. Like Hogwarts houses, each architectural pattern has its own special purpose.
 
-- Doctrine DBAL/ORM abstraction with enhanced DQL capabilities
-- PSR-4 autoloading compliant
-- League package integration (Fractal, Route, Container, Event, Pipeline, Tactician)
-- Symfony Dotenv for environment configuration
-- Full PSR-12 code style compliance
-- Comprehensive test suite with PHPUnit, Mockery & PHPStan
-- ADR (Action-Domain-Responder) pattern for API endpoints
-- MVC (Model-View-Controller) pattern for web requests
-- PWA-ready JSON:API responses via League Fractal
+---
 
-## Requirements
+## 🏰 The Three Pillars of Oryx Cathedral
 
-- PHP ^8.2
-- Extensions: mbstring, intl, pdo_mysql
-- MariaDB/MySQL on LAMP stack
-
-## Installation
-
-```bash
-composer install
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    ORYX CATHEDRAL                                │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   ┌─────────────┐    ┌─────────────┐    ┌─────────────────────┐  │
+│   │  oryx/mvc  │    │  oryx/adr   │    │     oryx/orm       │  │
+│   ├─────────────┤    ├─────────────┤    ├─────────────────────┤  │
+│   │ • Controller│    │ • Action    │    │ • Entity Manager    │  │
+│   │ • Model    │    │ • Domain    │    │ • Query Builder     │  │
+│   │ • View     │    │ • Responder │    │ • Unit of Work      │  │
+│   │ (Plates)   │    │ (JSON:API)  │    │ • XML Schemas       │  │
+│   └──────┬──────┘    └──────┬──────┘    └──────────┬──────────┘  │
+│          │                  │                       │             │
+│          └──────────────────┴───────────────────────┘             │
+│                              │                                    │
+│                    ┌─────────▼─────────┐                         │
+│                    │  League Packages  │                         │
+│                    │  • Route         │                         │
+│                    │  • Fractal      │                         │
+│                    │  • Container    │                         │
+│                    │  • Event        │                         │
+│                    └─────────────────┘                         │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-## Package Integration
+---
+
+## 🏠 The Oryx/MVC House
+
+Like Gryffindor, **MVC** is the classic house of web development.
+
+```
+╔═══════════════════════════════════════════════════════════════╗
+║                     MVC FLOW CHART                            ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║   HTTP Request                                                ║
+║       │                                                       ║
+║       ▼                                                       ║
+║   ┌──────────────┐    ┌─────────────┐    ┌──────────────┐  ║
+║   │  Controller  │───▶│    Model    │───▶│     View     │  ║
+║   │  (Harry)     │    │  (Hermione) │    │   (Ron)      │  ║
+║   └──────────────┘    └─────────────┘    └──────────────┘  ║
+║         │                  │                   │              ║
+║         ▼                  ▼                   ▼              ║
+║   HTTP Response ←─────────────── HTML/Templates ───────────  ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
+### MVC Package Structure
+
+```php
+// vendor/oryx/mvc/src/
+Prototype\Mvc\
+├── Application.php           // The Enchanted Router
+├── AbstractController.php    // Base spell-casting class
+├── ControllerInterface.php   // Contract for Controllers
+├── Controller/
+│   └── HomeController.php    // Specific spell handlers
+├── Model/
+│   ├── AbstractModel.php     // Data manipulation magic
+│   └── ModelInterface.php    // Model contract
+└── View/
+    ├── PlatesView.php        // Template rendering (League Plates)
+    └── ViewInterface.php     // View contract
+```
+
+### MVC Code Example
+
+```php
+namespace Prototype\Mvc\Controller;
+
+use Prototype\Mvc\AbstractController;
+
+class UserController extends AbstractController
+{
+    public function index(): void
+    {
+        $users = $this->model->findAll();
+        $this->render('users/index', ['users' => $users]);
+    }
+
+    public function show(int $id): void
+    {
+        $user = $this->model->findById($id);
+        $this->render('users/show', ['user' => $user]);
+    }
+}
+```
+
+---
+
+## ⚡ The Oryx/ADR House
+
+Like Slytherin, **ADR** is the modern house for API sorcerers.
+
+```
+╔═══════════════════════════════════════════════════════════════╗
+║                     ADR FLOW CHART                            ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║   HTTP Request                                                ║
+║       │                                                       ║
+║       ▼                                                       ║
+║   ┌──────────┐     ┌─────────────┐     ┌────────────────┐    ║
+║   │  Action   │────▶│   Domain    │────▶│   Responder   │    ║
+║   │ (Hermione)│     │ (Textbook)  │     │ (Magic Quill) │    ║
+║   └──────────┘     └─────────────┘     └────────────────┘    ║
+║         │                  │                    │             ║
+║         ▼                  ▼                    ▼             ║
+║   Validation         Business Logic      JSON:API Output     ║
+║                                                               ║
+║   Response ◀────────────────────────────────────────────────  ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+```
+
+### ADR Package Structure
+
+```php
+// vendor/oryx/adr/src/
+Oryx\Adr\
+├── Action/
+│   ├── ActionInterface.php      // Action contract
+│   └── AbstractAction.php       // Base action spell
+├── Domain/
+│   ├── DomainInterface.php      // Domain contract
+│   └── AbstractDomain.php       // Business logic base
+├── Responder/
+│   ├── ResponderInterface.php   // Responder contract
+│   ├── JsonApiResponder.php     // JSON:API formatter ✨
+│   ├── ProblemDetailsResponder.php // Error handler
+│   ├── DefaultResponderFactory.php
+│   └── ResponderFactory.php     // Responder creator
+└── Middleware/
+    └── ManifestJsonMiddleware.php // PWA manifest
+```
+
+### ADR Code Example
+
+```php
+// src/Action/User/ListAction.php
+namespace App\Action\User;
+
+use App\Domain\UserDomain;
+use Oryx\Adr\Action\AbstractAction;
+use Oryx\Adr\Responder\JsonApiResponder;
+use League\Fractal\Manager;
+use League\Fractal\Resource\Collection;
+
+class ListAction extends AbstractAction
+{
+    public function __construct(
+        UserDomain $domain,
+        ResponderFactory $factory,
+        private Manager $fractal
+    ) {
+        parent::__construct($domain, $factory);
+    }
+
+    public function execute(DomainInterface $domain): string
+    {
+        $users = $domain->findAll();
+        
+        $resource = new Collection($users, new UserTransformer());
+        $data = $this->fractal->createData($resource)->toArray();
+        
+        return JsonApiResponder::resourceCollection('users', $data);
+    }
+}
+```
+
+### JsonApiResponder Magic
+
+```php
+// Single resource
+return JsonApiResponder::singleResource(
+    'users',
+    $user->getId(),
+    ['email' => $user->getEmail(), 'name' => $user->getName()],
+    ['group' => ['type' => 'groups', 'id' => '1']]
+);
+
+// Collection
+return JsonApiResponder::resourceCollection('users', $usersArray, [
+    'self' => '/api/users',
+    'next' => '/api/users?page=2'
+]);
+
+// No content (DELETE)
+return JsonApiResponder::noContent();
+```
+
+---
+
+## 📦 The Package Ecosystem
 
 ### Symfony Components
 
-| Package | Usage |
-|---------|-------|
-| `symfony/console` | `bin/console` CLI commands |
-| `symfony/dotenv` | `$dotenv->bootEnv('.env')` |
-| `symfony/event-dispatcher` | `$dispatcher->dispatch(new Event())` |
+| Component | Magical Property | Example |
+|-----------|-----------------|---------|
+| `symfony/console` | CLI wand | `bin/console` |
+| `symfony/dotenv` | Env owl | `(new Dotenv())->bootEnv('.env')` |
+| `symfony/event-dispatcher` | Message patronus | `$dispatcher->dispatch($event)` |
+| `symfony/string` | String enchantment | `Uuid::generate()` |
 
 ### League Packages
 
-| Package | Usage |
-|---------|-------|
-| `league/route` | `$router->map('GET', '/path', Handler::class)` |
-| `league/fractal` | `$fractal->createData($resource)->toArray()` |
-| `league/container` | `$container->get(Service::class)` |
-| `league/event` | `EventEmitter` for domain events |
-| `league/pipeline` | `PipelineBuilder` for processing |
-| `league/tactician` | Command bus pattern |
+| Package | Magical Property | Example |
+|---------|-----------------|---------|
+| `league/route` | Routing Floo Network | `$router->map('GET', '/path', Handler)` |
+| `league/fractal` | JSON:API metamorphosis | `$fractal->createData($resource)` |
+| `league/container` | Potion container | `$container->get(Service::class)` |
+| `league/plates` | Template spellbook | `$engine->render('template', $data)` |
+| `league/event` | Event charms | `Emitter::emit('event', $payload)` |
+| `league/pipeline` | Processing pipeweed | `$pipeline->send($data)->then($processor)` |
+| `league/tactician` | Command bus | `$bus->handle($command)` |
 
-### Oryx Packages
+---
 
-| Package | Usage |
-|---------|-------|
-| `oryx/mvc` | MVC dispatcher: Controller → Model → View |
-| `oryx/adr` | ADR dispatcher: Action → Domain → Responder |
-| `oryx/orm` | EntityManager factory for Doctrine ORM |
+## 🎓 The Oryx ORM Grimoire
 
-## Architecture Patterns
+### Entity Generation from XML
 
-### ADR Pattern (Action-Domain-Responder)
-
-```
-Request → Router → Action → Domain/Repository → Fractal → JSON Response
+```bash
+# Generate entities from XML schemas
+bin/console oryx:entities:generate
 ```
 
-### MVC Pattern (Model-View-Controller)
+### XML Schema Example
 
+```xml
+<!-- src/Schema/definitions/User.orm.xml -->
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping">
+
+    <entity name="App\Entity\User" table="users">
+        <id name="id" type="integer">
+            <generator strategy="IDENTITY"/>
+        </id>
+        <field name="email" type="string" unique="true"/>
+        <field name="roles" type="json"/>
+        <field name="password" type="string"/>
+        <field name="createdAt" type="datetime"/>
+        <field name="updatedAt" type="datetime" nullable="true"/>
+        
+        <one-to-many target-entity="Post" field="posts" mapped-by="user"/>
+        <many-to-one target-entity="Group" field="group"/>
+    </entity>
+</doctrine-mapping>
 ```
-Request → FrontController → Controller → Model → View → Response
-```
 
-## League/Fractal Usage Examples
-
-### 1. Transformer Definition
+### League/Fractal Transformers
 
 ```php
 // src/Transformer/Resource/UserTransformer.php
@@ -106,198 +298,61 @@ class UserTransformer extends TransformerAbstract
 }
 ```
 
-### 2. Collection Transformation
+---
 
-```php
-use League\Fractal\Manager;
-use League\Fractal\Resource\Collection;
-use App\Transformer\Resource\UserTransformer;
+## 🔮 RESTful vs AJAX: The Great Debate
 
-$fractal = new Manager();
-$fractal->setSerializer(new JsonApiSerializer());
+### RESTful (Traditional Wizard)
 
-$users = $userRepository->findAll();
-$resource = new Collection($users, new UserTransformer());
-
-$data = $fractal->createData($resource)->toArray();
-// → {"data": [{"id": 1, "type": "users", "attributes": {...}}, ...]}
+```
+GET    /api/users          → List all wizards
+GET    /api/users/1        → Show wizard by ID
+POST   /api/users          → Enroll new wizard
+PUT    /api/users/1       → Update entire wizard record
+DELETE /api/users/1       → Expel wizard
 ```
 
-### 3. Single Resource with Includes
+### AJAX/SPAs (Modern Sorcerer)
 
-```php
-use League\Fractal\Resource\Item;
-
-$user = $userRepository->find($id);
-$resource = new Item($user, new UserTransformer());
-
-$data = $fractal->createData($resource)->toArray();
-// → {"data": {...}, "included": {"posts": [...], "group": {...}}}
 ```
-
-## League/Route Usage
-
-```php
-use League\Route\Router;
-use League\Route\Strategy\JsonStrategy;
-use Laminas\Diactoros\ResponseFactory;
-
-$router = new Router();
-$router->setStrategy(new JsonStrategy(new ResponseFactory()));
-
-// Map routes
-$router->map('GET', '/api/users', [ListAction::class, '__invoke']);
-$router->map('GET', '/api/users/{id}', [ShowAction::class, '__invoke']);
-$router->map('POST', '/api/users', [CreateAction::class, '__invoke']);
-$router->map('PUT', '/api/users/{id}', [UpdateAction::class, '__invoke']);
-$router->map('DELETE', '/api/users/{id}', [DeleteAction::class, '__invoke']);
-
-// Dispatch request
-$response = $router->dispatch($request);
+GET    /api/users          → List wizards (cached client-side)
+PATCH  /api/users/1        → Change wizard's house only
 ```
-
-## Oryx/MVC + Oryx/ADR Integration
-
-### Kernel Setup
-
-```php
-// src/App/Kernel.php
-namespace App;
-
-use League\Container\Container;
-use League\Route\Router;
-use League\Route\Strategy\JsonStrategy;
-use Laminas\Diactoros\ResponseFactory;
-use Symfony\Component\EventDispatcher\EventDispatcher;
-use Symfony\Component\Dotenv\Dotenv;
-use Doctrine\ORM\EntityManager;
-use League\Fractal\Manager as FractalManager;
-use League\Fractal\Serializer\JsonApiSerializer;
-use Oryx\ORM\EntityManagerFactory;
-
-class Kernel
-{
-    private Container $container;
-    private Router $router;
-    private EntityManager $em;
-    private FractalManager $fractal;
-
-    public function __construct(string $environment = 'dev', bool $debug = true)
-    {
-        $this->container = new Container();
-        $this->router = new Router();
-        $this->dispatcher = new EventDispatcher();
-        $this->boot();
-    }
-
-    private function boot(): void
-    {
-        (new Dotenv())->bootEnv(dirname(__DIR__, 2) . '/.env');
-        
-        $this->em = EntityManagerFactory::createFromEnv();
-        $this->fractal = new FractalManager();
-        $this->fractal->setSerializer(new JsonApiSerializer());
-        
-        $this->router->setStrategy(new JsonStrategy(new ResponseFactory()));
-        $this->registerServices();
-        $this->registerRoutes();
-    }
-}
-```
-
-### ADR Action Example
-
-```php
-// src/Action/User/ListAction.php
-namespace App\Action\User;
-
-use App\Repository\UserRepository;
-use League\Fractal\Manager;
-use League\Fractal\Resource\Collection;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
-
-class ListAction
-{
-    public function __construct(
-        private UserRepository $repository,
-        private Manager $fractal
-    ) {}
-
-    public function __invoke(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
-    {
-        $users = $this->repository->findAll();
-        
-        $resource = new Collection($users, new \App\Transformer\Resource\UserTransformer());
-        $data = $this->fractal->createData($resource)->toArray();
-        
-        $response->getBody()->write(json_encode($data));
-        return $response->withHeader('Content-Type', 'application/json');
-    }
-}
-```
-
-## RESTful vs AJAX CRUD
-
-### RESTful (Stateless)
-
-```php
-// RESTful: Full resource representation
-GET    /api/users          → ListAction    → 200 + all users
-GET    /api/users/{id}     → ShowAction    → 200 + single user
-POST   /api/users          → CreateAction  → 201 + created user
-PUT    /api/users/{id}     → UpdateAction  → 200 + updated user
-DELETE /api/users/{id}     → DeleteAction  → 204 + empty
-```
-
-### AJAX/SPAs (State-Driven)
-
-```php
-// AJAX: Partial updates, optimistic UI
-PATCH  /api/users/{id}     → UpdateAction  → 200 + changed fields only
-```
-
-### Comparison
 
 | Aspect | RESTful | AJAX/SPAs |
 |--------|---------|-----------|
-| **State** | Client-managed | Server-managed |
-| **Payload** | Full resource | Partial/diff |
-| **Caching** | HTTP caching | Client-side cache |
-| **Bandwidth** | Higher | Lower |
+| **State** | Client stores everything | Server manages state |
+| **Payload** | Full resource | Only changes |
+| **Caching** | HTTP cache | LocalStorage/IndexedDB |
+| **Complexity** | Simpler protocol | Complex client |
 
-## Console Commands
+---
 
-```bash
-# List available commands
-bin/console list
-
-# Generate entities from XML schemas
-bin/console oryx:entities:generate
-
-# Run Doctrine migrations
-bin/console doctrine:migrations:migrate
-```
-
-## Development
+## 🧪 Development
 
 ```bash
-# Install dependencies
+# Install magical dependencies
 composer install
 
-# Run tests
+# Cast tests
 composer test
 
-# Check code style
+# Check spell syntax
 composer cs-check
 
-# Fix code style
+# Fix common typos
 composer cs-fix
 
-# Run static analysis
+# Analyze magical abilities
 composer stan
 ```
 
-## License
+---
 
-MIT
+## 📜 License
+
+MIT - Free as in magical freedom!
+
+---
+
+*"Muggles have invented something called the Internet, but wizards have Oryx."* — Albus Dumbledore
