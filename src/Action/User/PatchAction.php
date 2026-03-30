@@ -6,12 +6,11 @@ namespace App\Action\User;
 
 use App\Fixture\FixtureLoader;
 use App\Entity\User;
+use App\Responder\JsonHalResponder;
 use League\Fractal\Manager;
 use League\Fractal\Resource\Item;
-use League\Fractal\Serializer\JsonApiSerializer;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Laminas\Diactoros\Response\JsonResponse;
 
 class PatchAction
 {
@@ -22,7 +21,6 @@ class PatchAction
     {
         $this->loader = $loader;
         $this->fractal = new Manager();
-        $this->fractal->setSerializer(new JsonApiSerializer());
     }
 
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
@@ -30,25 +28,13 @@ class PatchAction
         $id = (int) ($request->getAttribute('id') ?? 0);
 
         if ($id <= 0) {
-            return new JsonResponse([
-                'errors' => [[
-                    'status' => '400',
-                    'title' => 'Bad Request',
-                    'detail' => 'Invalid user ID provided',
-                ]],
-            ], 400);
+            return JsonHalResponder::badRequest('Invalid user ID provided');
         }
 
         $body = json_decode((string) $request->getBody(), true);
 
         if (empty($body)) {
-            return new JsonResponse([
-                'errors' => [[
-                    'status' => '422',
-                    'title' => 'Unprocessable Entity',
-                    'detail' => 'No fields provided for update',
-                ]],
-            ], 422);
+            return JsonHalResponder::unprocessableEntity([['field' => 'body', 'message' => 'No fields provided']]);
         }
 
         $user = $this->loader->make(User::class);
@@ -65,8 +51,14 @@ class PatchAction
         $resource = new Item($user, new \App\Transformer\Resource\UserTransformer());
         $data = $this->fractal->createData($resource)->toArray();
 
-        return new JsonResponse($data, 200, [
-            'Content-Type' => 'application/vnd.api+json',
-        ]);
+        return JsonHalResponder::resource(
+            'user',
+            (string) $id,
+            $data,
+            [
+                'collection' => '/api/users',
+                'self' => "/api/users/{$id}",
+            ]
+        );
     }
 }

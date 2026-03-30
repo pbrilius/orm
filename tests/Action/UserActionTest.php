@@ -36,7 +36,7 @@ class UserActionTest extends TestCase
         $this->deleteAction = new DeleteAction();
     }
 
-    public function testListActionReturnsJsonApi(): void
+    public function testListActionReturnsHalJson(): void
     {
         $request = new ServerRequest();
         $response = new Response();
@@ -44,11 +44,11 @@ class UserActionTest extends TestCase
         $result = ($this->listAction)($request, $response);
 
         $this->assertEquals(200, $result->getStatusCode());
-        $this->assertEquals('application/vnd.api+json', $result->getHeaderLine('Content-Type'));
+        $this->assertEquals('application/hal+json', $result->getHeaderLine('Content-Type'));
 
         $body = json_decode((string) $result->getBody(), true);
-        $this->assertArrayHasKey('data', $body);
-        $this->assertIsArray($body['data']);
+        $this->assertArrayHasKey('_embedded', $body);
+        $this->assertArrayHasKey('users', $body['_embedded']);
     }
 
     public function testShowActionReturnsUser(): void
@@ -60,10 +60,11 @@ class UserActionTest extends TestCase
         $result = ($this->showAction)($request, $response);
 
         $this->assertEquals(200, $result->getStatusCode());
-        $this->assertEquals('application/vnd.api+json', $result->getHeaderLine('Content-Type'));
+        $this->assertEquals('application/hal+json', $result->getHeaderLine('Content-Type'));
 
         $body = json_decode((string) $result->getBody(), true);
-        $this->assertArrayHasKey('data', $body);
+        $this->assertArrayHasKey('_links', $body);
+        $this->assertArrayHasKey('user', $body);
     }
 
     public function testShowActionWithInvalidIdReturns400(): void
@@ -97,7 +98,7 @@ class UserActionTest extends TestCase
         $result = ($this->createAction)($request, $response);
 
         $this->assertEquals(201, $result->getStatusCode());
-        $this->assertEquals('application/vnd.api+json', $result->getHeaderLine('Content-Type'));
+        $this->assertEquals('application/hal+json', $result->getHeaderLine('Content-Type'));
     }
 
     public function testCreateActionWithoutEmailReturns422(): void
@@ -135,7 +136,7 @@ class UserActionTest extends TestCase
         $result = ($this->updateAction)($request, $response);
 
         $this->assertEquals(200, $result->getStatusCode());
-        $this->assertEquals('application/vnd.api+json', $result->getHeaderLine('Content-Type'));
+        $this->assertEquals('application/hal+json', $result->getHeaderLine('Content-Type'));
     }
 
     public function testPatchActionReturns200(): void
@@ -157,7 +158,7 @@ class UserActionTest extends TestCase
         $result = ($this->patchAction)($request, $response);
 
         $this->assertEquals(200, $result->getStatusCode());
-        $this->assertEquals('application/vnd.api+json', $result->getHeaderLine('Content-Type'));
+        $this->assertEquals('application/hal+json', $result->getHeaderLine('Content-Type'));
     }
 
     public function testPatchActionWithEmptyBodyReturns422(): void

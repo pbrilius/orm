@@ -1,110 +1,113 @@
-# Oryx ORM Web Skeleton
+# Oryx ORM Web Skeleton - Step-by-Step Tutorial
 
-## 🧙‍♂️ The Oryx Cathedral: A PHP Apprentice's Guide
-
-Welcome, young wizard! In this enchanted chronicle, you shall learn the ancient arts of **Oryx ORM**, **MVC**, and **ADR** patterns. Like Hogwarts houses, each architectural pattern has its own special purpose.
+## Table of Contents
+1. [Installation](#1-installation)
+2. [Architecture Overview](#2-architecture-overview)
+3. [MVC Pattern (Vanilla PHP)](#3-mvc-pattern-vanilla-php)
+4. [ADR Pattern (laminas/diactoros)](#4-adr-pattern-laminasdiactoros)
+5. [League Fractal Transformers](#5-league-fractal-transformers)
+6. [League Factory Muffin Fixtures](#6-league-factory-muffin-fixtures)
+7. [PSR Middleware Security](#7-psr-middleware-security)
+8. [API RESTfulness CRUD](#8-api-restfulness-crud)
+9. [Running the Application](#9-running-the-application)
 
 ---
 
-## 🏰 The Three Pillars of Oryx Cathedral
+## 1. Installation
+
+```bash
+git clone <repository>
+cd oryx-orm
+composer install
+```
+
+**Requirements:**
+- PHP 8.2+
+- MariaDB/MySQL or SQLite
+- Extensions: mbstring, intl, pdo_mysql
+
+**Environment:**
+```bash
+cp .env.example .env
+# Edit .env with your database credentials
+```
+
+---
+
+## 2. Architecture Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    ORYX CATHEDRAL                                │
+│                      ORYX WEB SKELETON                           │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│   ┌─────────────┐    ┌─────────────┐    ┌─────────────────────┐  │
-│   │  oryx/mvc  │    │  oryx/adr   │    │     oryx/orm       │  │
-│   ├─────────────┤    ├─────────────┤    ├─────────────────────┤  │
-│   │ • Controller│    │ • Action    │    │ • Entity Manager    │  │
-│   │ • Model    │    │ • Domain    │    │ • Query Builder     │  │
-│   │ • View     │    │ • Responder │    │ • Unit of Work      │  │
-│   │ (Plates)   │    │ (JSON:API)  │    │ • XML Schemas       │  │
-│   └──────┬──────┘    └──────┬──────┘    └──────────┬──────────┘  │
-│          │                  │                       │             │
-│          └──────────────────┴───────────────────────┘             │
-│                              │                                    │
-│                    ┌─────────▼─────────┐                         │
-│                    │  League Packages  │                         │
-│                    │  • Route         │                         │
-│                    │  • Fractal      │                         │
-│                    │  • Container    │                         │
-│                    │  • Event        │                         │
-│                    └─────────────────┘                         │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │                    Entry Points                           │    │
+│  │  public/index.php → Routes MVC ↔ ADR                     │    │
+│  │  public/mvc.php   → MVC only                             │    │
+│  │  public/api.php   → ADR only                             │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                              │                                   │
+│          ┌──────────────────┴──────────────────┐              │
+│          ▼                                      ▼              │
+│  ┌─────────────────────┐        ┌─────────────────────────┐   │
+│  │    MVC Layer        │        │      ADR Layer          │   │
+│  │  (Vanilla PHP)     │        │  (laminas/diactoros)    │   │
+│  ├─────────────────────┤        ├─────────────────────────┤   │
+│  │ • App\Http\Request │        │ • App\Kernel            │   │
+│  │ • App\Http\Response│        │ • App\Action\User\*     │   │
+│  │ • App\Http\Router │        │ • League\Fractal        │   │
+│  │ • PHP Templates   │        │ • JsonHalResponder       │   │
+│  └─────────────────────┘        └─────────────────────────┘   │
+│                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🏠 The Oryx/MVC House (Vanilla PHP)
+## 3. MVC Pattern (Vanilla PHP)
 
-**MVC** uses vanilla PHP - no laminas/diactoros dependency.
+**MVC uses NO external HTTP libraries** - pure PHP for maximum compatibility.
 
-```
-╔═══════════════════════════════════════════════════════════════╗
-║                     MVC FLOW CHART                            ║
-╠═══════════════════════════════════════════════════════════════╣
-║                                                               ║
-║   HTTP Request (Vanilla)                                     ║
-║       │                                                       ║
-║       ▼                                                       ║
-║   ┌──────────────┐    ┌─────────────┐    ┌──────────────┐  ║
-║   │  Controller  │───▶│    Model    │───▶│     View     │  ║
-║   │ (UserCtrl)   │    │  (Doctrine) │    │ (PHP templates)│ ║
-║   └──────────────┘    └─────────────┘    └──────────────┘  ║
-║         │                  │                   │              ║
-║         ▼                  ▼                   ▼              ║
-║   HTTP Response ←─────────────── HTML/Templates ───────────  ║
-║                                                               ║
-╚═══════════════════════════════════════════════════════════════╝
-```
-
-### MVC Implementation (Vanilla PHP)
+### 3.1 HTTP Layer (Vanilla)
 
 ```php
-// src/Http/Request.php - No laminas/diactoros
+// src/Http/Request.php
 namespace App\Http;
-class Request {
-    public function getMethod(): string { ... }
-    public function getPath(): string { ... }
-    public function get(string $key, $default = null) { ... }
-    public function post(string $key, $default = null) { ... }
-}
 
-// src/Http/Response.php - No laminas/diactoros
+class Request
+{
+    public function getMethod(): string { /* $_SERVER['REQUEST_METHOD'] */ }
+    public function getPath(): string { /* parse_url() */ }
+    public function get(string $key, $default = null) { /* $_GET */ }
+    public function post(string $key, $default = null) { /* $_POST */ }
+}
+```
+
+```php
+// src/Http/Response.php
 namespace App\Http;
-class Response {
-    public function __construct(string $content, int $status, array $headers);
-    public function send(): void { ... }
+
+class Response
+{
+    public function __construct(string $content, int $status = 200, array $headers = []);
+    public function send(): void { /* header() + echo */ }
 }
-
-// src/Http/Router.php - Vanilla routing
-$router->get('/users', fn($req) => new Response($html));
 ```
 
-### MVC Routes
+```php
+// src/Http/Router.php
+namespace App\Http;
 
-| Method | Path | Handler |
-|--------|------|---------|
-| `GET` | `/` | Home page |
-| `GET` | `/users` | User list |
-| `GET` | `/users/create` | Create form |
-| `POST` | `/users/create` | Create user |
-| `GET` | `/users/{id}` | Show user |
-
-### MVC Templates
-
-```
-src/View/templates/
-├── home.php              # Home page
-├── error/404.php         # Error page
-└── users/
-    ├── index.php        # User list
-    ├── show.php         # User detail
-    └── create.php       # Create form
+class Router
+{
+    public function get(string $path, callable $handler): void;
+    public function post(string $path, callable $handler): void;
+    public function dispatch(Request $request): ?Response;
+}
 ```
 
-### MVC Code Example (Vanilla PHP)
+### 3.2 MVC Controller
 
 ```php
 // src/Controller/UserController.php
@@ -123,182 +126,192 @@ class UserController
 
     public function index(): array
     {
-        $users = $this->repository->findAll();
-        return ['users' => $users];
+        return ['users' => $this->repository->findAll()];
     }
 }
-
-// src/App/MvcApplication.php
-$router->get('/users', function (Request $req) {
-    $data = $this->controllers['user']->index();
-    return new Response($this->view->render('users/index', $data));
-});
 ```
+
+### 3.3 MVC Application
+
+```php
+// src/App/MvcApplication.php
+namespace App;
+
+use App\Http\Request;
+use App\Http\Response;
+use App\Http\Router;
+use App\View\ViewRenderer;
+use Doctrine\ORM\EntityManager;
+
+class MvcApplication
+{
+    public function __construct(EntityManager $em)
+    {
+        $this->router = new Router();
+        $this->view = new ViewRenderer();
+    }
+
+    public function run(): void
+    {
+        $request = new Request();
+        $response = $this->router->dispatch($request);
+        $response->send();
+    }
+}
+```
+
+### 3.4 MVC Routes
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/` | Home page |
+| `GET` | `/users` | User list |
+| `GET` | `/users/create` | Create form |
+| `POST` | `/users/create` | Create user |
+| `GET` | `/users/{id}` | Show user |
 
 ---
 
-## ⚡ The Oryx/ADR House (laminas/diactoros)
+## 4. ADR Pattern (laminas/diactoros)
 
-**ADR** uses laminas/diactoros for PSR-7/PSR-15.
+**ADR uses PSR-7/PSR-15 for modern HTTP handling.**
 
-```
-╔═══════════════════════════════════════════════════════════════╗
-║                     ADR FLOW CHART                            ║
-╠═══════════════════════════════════════════════════════════════╣
-║                                                               ║
-║   HTTP Request (laminas/Diactoros)                           ║
-║       │                                                       ║
-║       ▼                                                       ║
-║   ┌──────────┐     ┌─────────────┐     ┌────────────────┐    ║
-║   │  Action   │────▶│   Domain    │────▶│   Responder   │    ║
-║   │ (Hermione)│     │ (Textbook)  │     │ (Magic Quill) │    ║
-║   └──────────┘     └─────────────┘     └────────────────┘    ║
-║         │                  │                    │             ║
-║         ▼                  ▼                    ▼             ║
-║   Validation         Business Logic      JSON:API Output     ║
-║                                                               ║
-║   Response ◀────────────────────────────────────────────────  ║
-║                                                               ║
-╚═══════════════════════════════════════════════════════════════╝
-```
-
-### ADR Package Structure
+### 4.1 Kernel Setup
 
 ```php
-// vendor/oryx/adr/src/
-Oryx\Adr\
-├── Action/
-│   ├── ActionInterface.php      // Action contract
-│   └── AbstractAction.php       // Base action spell
-├── Domain/
-│   ├── DomainInterface.php      // Domain contract
-│   └── AbstractDomain.php       // Business logic base
-├── Responder/
-│   ├── ResponderInterface.php   // Responder contract
-│   ├── JsonApiResponder.php     // JSON:API formatter ✨
-│   ├── ProblemDetailsResponder.php // Error handler
-│   ├── DefaultResponderFactory.php
-│   └── ResponderFactory.php     // Responder creator
-└── Middleware/
-    └── ManifestJsonMiddleware.php // PWA manifest
+// src/App/Kernel.php
+namespace App;
+
+use Laminas\Diactoros\ServerRequestFactory;
+use League\Route\Router;
+use League\Route\Strategy\JsonStrategy;
+use Laminas\Diactoros\ResponseFactory;
+
+class Kernel
+{
+    private Router $router;
+
+    public function __construct()
+    {
+        $this->router = new Router();
+        $this->router->setStrategy(new JsonStrategy(new ResponseFactory()));
+        $this->registerRoutes();
+    }
+
+    public function handle(ServerRequestInterface $request): ResponseInterface
+    {
+        return $this->router->dispatch($request);
+    }
+}
 ```
 
-### ADR Code Example
+### 4.2 ADR Actions (Invokable)
 
 ```php
 // src/Action/User/ListAction.php
 namespace App\Action\User;
 
-use App\Domain\UserDomain;
-use Oryx\Adr\Action\AbstractAction;
-use Oryx\Adr\Responder\JsonApiResponder;
+use App\Fixture\FixtureLoader;
+use App\Entity\User;
 use League\Fractal\Manager;
 use League\Fractal\Resource\Collection;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 
-class ListAction extends AbstractAction
+class ListAction
 {
-    public function __construct(
-        UserDomain $domain,
-        ResponderFactory $factory,
-        private Manager $fractal
-    ) {
-        parent::__construct($domain, $factory);
+    private FixtureLoader $loader;
+    private Manager $fractal;
+
+    public function __construct(FixtureLoader $loader)
+    {
+        $this->loader = $loader;
+        $this->fractal = new Manager();
     }
 
-    public function execute(DomainInterface $domain): string
-    {
-        $users = $domain->findAll();
-        
-        $resource = new Collection($users, new UserTransformer());
+    public function __invoke(
+        ServerRequestInterface $request,
+        ResponseInterface $response
+    ): ResponseInterface {
+        $users = $this->loader->makeMany(User::class, 5);
+        $resource = new Collection($users, new \App\Transformer\Resource\UserTransformer());
         $data = $this->fractal->createData($resource)->toArray();
-        
-        return JsonApiResponder::resourceCollection('users', $data);
+
+        return new JsonResponse($data, 200, [
+            'Content-Type' => 'application/hal+json',
+        ]);
     }
 }
 ```
 
-### JsonApiResponder Magic
+### 4.3 JSON:HAL Responder
 
 ```php
-// Single resource
-return JsonApiResponder::singleResource(
-    'users',
-    $user->getId(),
-    ['email' => $user->getEmail(), 'name' => $user->getName()],
-    ['group' => ['type' => 'groups', 'id' => '1']]
-);
+// src/Responder/JsonHalResponder.php
+namespace App\Responder;
 
-// Collection
-return JsonApiResponder::resourceCollection('users', $usersArray, [
-    'self' => '/api/users',
-    'next' => '/api/users?page=2'
-]);
+use Laminas\Diactoros\Response\JsonResponse;
 
-// No content (DELETE)
-return JsonApiResponder::noContent();
+class JsonHalResponder
+{
+    public static function resource(string $type, string $id, array $attributes, array $links = []): JsonResponse
+    {
+        $data = [
+            '_links' => [
+                'self' => ['href' => "/{$type}/{$id}"],
+            ],
+            '_embedded' => [],
+        ];
+
+        foreach ($links as $rel => $href) {
+            $data['_links'][$rel] = ['href' => $href];
+        }
+
+        $data[$type] = array_merge(['id' => $id], $attributes);
+
+        return new JsonResponse($data);
+    }
+
+    public static function collection(string $type, array $items, array $meta = []): JsonResponse
+    {
+        $data = [
+            '_links' => [
+                'self' => ['href' => "/{$type}"],
+            ],
+            '_embedded' => [
+                $type => $items,
+            ],
+            '_meta' => $meta,
+        ];
+
+        return new JsonResponse($data);
+    }
+
+    public static function error(string $title, int $status, string $detail = ''): JsonResponse
+    {
+        return new JsonResponse([
+            '_error' => [
+                'status' => $status,
+                'title' => $title,
+                'detail' => $detail,
+            ],
+        ], $status);
+    }
+
+    public static function noContent(): JsonResponse
+    {
+        return new JsonResponse(null, 204);
+    }
+}
 ```
 
 ---
 
-## 📦 The Package Ecosystem
+## 5. League Fractal Transformers
 
-### Symfony Components
+**Transformers convert entities to HAL format.**
 
-| Component | Magical Property | Example |
-|-----------|-----------------|---------|
-| `symfony/console` | CLI wand | `bin/console` |
-| `symfony/dotenv` | Env owl | `(new Dotenv())->bootEnv('.env')` |
-| `symfony/event-dispatcher` | Message patronus | `$dispatcher->dispatch($event)` |
-| `symfony/string` | String enchantment | `Uuid::generate()` |
-
-### League Packages
-
-| Package | Magical Property | Example |
-|---------|-----------------|---------|
-| `league/route` | Routing Floo Network | `$router->map('GET', '/path', Handler)` |
-| `league/fractal` | JSON:API metamorphosis | `$fractal->createData($resource)` |
-| `league/container` | Potion container | `$container->get(Service::class)` |
-| `league/plates` | Template spellbook | `$engine->render('template', $data)` |
-| `league/event` | Event charms | `Emitter::emit('event', $payload)` |
-| `league/pipeline` | Processing pipeweed | `$pipeline->send($data)->then($processor)` |
-| `league/tactician` | Command bus | `$bus->handle($command)` |
-
----
-
-## 🎓 The Oryx ORM Grimoire
-
-### Entity Generation from XML
-
-```bash
-# Generate entities from XML schemas
-bin/console oryx:entities:generate
-```
-
-### XML Schema Example
-
-```xml
-<!-- src/Schema/definitions/User.orm.xml -->
-<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
-                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                  xsi:schemaLocation="https://doctrine-project.org/schemas/orm/doctrine-mapping">
-
-    <entity name="App\Entity\User" table="users">
-        <id name="id" type="integer">
-            <generator strategy="IDENTITY"/>
-        </id>
-        <field name="email" type="string" unique="true"/>
-        <field name="roles" type="json"/>
-        <field name="password" type="string"/>
-        <field name="createdAt" type="datetime"/>
-        <field name="updatedAt" type="datetime" nullable="true"/>
-        
-        <one-to-many target-entity="Post" field="posts" mapped-by="user"/>
-        <many-to-one target-entity="Group" field="group"/>
-    </entity>
-</doctrine-mapping>
-```
-
-### League/Fractal Transformers
+### 5.1 User Transformer
 
 ```php
 // src/Transformer/Resource/UserTransformer.php
@@ -314,10 +327,11 @@ class UserTransformer extends TransformerAbstract
     public function transform(User $user): array
     {
         return [
-            'id' => $user->getId(),
+            'id' => $user->getId() ?? 0,
             'email' => $user->getEmail(),
             'roles' => $user->getRoles(),
             'created_at' => $user->getCreatedAt()->format('c'),
+            'updated_at' => $user->getUpdatedAt()?->format('c'),
         ];
     }
 
@@ -333,9 +347,29 @@ class UserTransformer extends TransformerAbstract
 }
 ```
 
-### League/Factory-Muffin Fixtures
+### 5.2 Using Transformers in Actions
 
-Create test fixtures easily using Factory Muffin:
+```php
+// In ADR Action
+use League\Fractal\Manager;
+use League\Fractal\Resource\Collection;
+use League\Fractal\Serializer\JsonApiSerializer;
+
+$fractal = new Manager();
+$fractal->setSerializer(new JsonApiSerializer());
+
+$users = $this->repository->findAll();
+$resource = new Collection($users, new UserTransformer());
+$data = $fractal->createData($resource)->toArray();
+```
+
+---
+
+## 6. League Factory Muffin Fixtures
+
+**Fixtures provide test data generation.**
+
+### 6.1 Factory Definition
 
 ```php
 // tests/factories/user.factories.php
@@ -346,342 +380,335 @@ $fm->define(User::class)->setDefinitions([
     'password' => 'password123',
     'roles' => ['ROLE_USER'],
     'createdAt' => fn() => new \DateTimeImmutable(),
-]);
+])->setCallback(function (User $user) {
+    $user->setGroup(null);
+});
 ```
 
-Using FixtureLoader in tests:
+### 6.2 FixtureLoader
 
 ```php
-use App\Fixture\FixtureLoader;
-use App\Entity\User;
+// src/Fixture/FixtureLoader.php
+namespace App\Fixture;
 
-$loader = new FixtureLoader();
+use League\FactoryMuffin\FactoryMuffin;
 
-// Create single instance
-$user = $loader->make(User::class);
+class FixtureLoader
+{
+    private FactoryMuffin $fm;
 
-// Create multiple instances
-$users = $loader->makeMany(User::class, 10);
+    public function __construct()
+    {
+        $this->fm = new FactoryMuffin();
+        $this->fm->loadFactories(__DIR__ . '/../../tests/factories');
+    }
 
-// With EntityManager for persistence
-$em = $entityManager; // Doctrine EntityManager
-$loader = new FixtureLoader($em);
-$user = $loader->createAndPersist(User::class);
+    public function make(string $class): object
+    {
+        return $this->fm->seed(1, $class, [], false)[0];
+    }
+
+    public function makeMany(string $class, int $count): array
+    {
+        return $this->fm->seed($count, $class, [], false);
+    }
+}
+```
+
+### 6.3 Using Fixtures in Tests
+
+```php
+// tests/Action/UserActionTest.php
+public function testListActionReturnsHalJson(): void
+{
+    $loader = new FixtureLoader();
+    $action = new ListAction($loader);
+    
+    $result = $action($request, $response);
+    
+    $this->assertEquals(200, $result->getStatusCode());
+    $this->assertEquals('application/hal+json', $result->getHeaderLine('Content-Type'));
+}
 ```
 
 ---
 
-## 🔬 STEM CRUD: Architectural Patterns Spectrum
+## 7. PSR Middleware Security
 
-```
-╔══════════════════════════════════════════════════════════════════════════════╗
-║                    THE ARCHITECTURAL SPECTRUM                                 ║
-╠══════════════════════════════════════════════════════════════════════════════╣
-║                                                                              ║
-║   ┌─────────────┐     ┌─────────────┐     ┌─────────────┐                ║
-║   │   MVC       │     │   ADR       │     │   SAPI      │                ║
-║   │ (Classic)   │ ←→  │ (API-First)│ ←→  │ (Async)     │                ║
-║   ├─────────────┤     ├─────────────┤     ├─────────────┤                ║
-║   │ • Full HTML │     │ • JSON:API  │     │ • AJAX      │                ║
-║   │ • SSR       │     │ • REST      │     │ • SPA       │                ║
-║   │ • Stateless │     │ • Stateless │     │ • Stateful  │                ║
-║   └─────────────┘     └─────────────┘     └─────────────┘                ║
-║         ↑                    ↑                    ↑                          ║
-║         └──────────────────┴────────────────────┘                        ║
-║                          ↓                                                 ║
-║               ┌─────────────────────┐                                      ║
-║               │      PWA           │                                      ║
-║               │  (Progressive)     │                                      ║
-║               ├─────────────────────┤                                      ║
-║               │ • Offline-first     │                                      ║
-║               │ • Installable       │                                      ║
-║               │ • Web + Native     │                                      ║
-║               └─────────────────────┘                                      ║
-║                                                                              ║
-╚══════════════════════════════════════════════════════════════════════════════╝
-```
+**Middleware provides security, CORS, rate limiting.**
 
-### 1️⃣ MVC (Model-View-Controller) — Classic Web
-
-**When to use:** Traditional server-rendered applications, SEO-critical pages.
+### 7.1 Security Middleware
 
 ```php
-// Controller receives request, processes via Model, renders View
-class UserController extends AbstractController
+// src/Middleware/SecurityMiddleware.php
+namespace App\Middleware;
+
+use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\ResponseInterface;
+
+class SecurityMiddleware implements MiddlewareInterface
 {
-    public function index(): void
-    {
-        $users = $this->repository->findAll();
-        $this->render('users/index', ['users' => $users]);
+    public function process(
+        ServerRequestInterface $request,
+        RequestHandlerInterface $handler
+    ): ResponseInterface {
+        $response = $handler->handle($request);
+
+        return $response
+            ->withHeader('X-Content-Type-Options', 'nosniff')
+            ->withHeader('X-Frame-Options', 'DENY')
+            ->withHeader('X-XSS-Protection', '1; mode=block')
+            ->withHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+            ->withHeader('Content-Security-Policy', "default-src 'self'");
     }
 }
 ```
 
-| Pros | Cons |
-|------|------|
-| ✅ SEO-friendly | ❌ Page reloads |
-| ✅ Simple architecture | ❌ Higher server load |
-| ✅ Persistent state via sessions | ❌ Less interactive |
-| ✅ Full page refresh | ❌ Slower UX |
-
-### 2️⃣ ADR (Action-Domain-Responder) — API-First
-
-**When to use:** Modern APIs, microservices, decoupled frontends.
-
-```
-╔════════════════════════════════════════════════════════════════╗
-║                    ADR FLOW DIAGRAM                            ║
-╠════════════════════════════════════════════════════════════════╣
-║                                                                ║
-║   Request ──▶ Action ──▶ Domain ──▶ Responder ──▶ Response   ║
-║                    │          │            │                    ║
-║                    ↓          ↓            ↓                    ║
-║              Validation   Business    JSON:API                   ║
-║                          Logic       Output                     ║
-╚════════════════════════════════════════════════════════════════╝
-```
-
-**Our ADR Actions (JSON:API format):**
+### 7.2 CORS Middleware
 
 ```php
-// ListAction → GET /api/users
-class ListAction
+// src/Middleware/CorsMiddleware.php
+namespace App\Middleware;
+
+class CorsMiddleware implements MiddlewareInterface
 {
-    public function __invoke(ServerRequestInterface $request): JsonResponse
-    {
-        $users = $this->loader->makeMany(User::class, 5);
-        $resource = new Collection($users, new UserTransformer());
-        $data = $this->fractal->createData($resource)->toArray();
-        return new JsonResponse($data, 200, [
-            'Content-Type' => 'application/vnd.api+json',
-        ]);
+    public function process(
+        ServerRequestInterface $request,
+        RequestHandlerInterface $handler
+    ): ResponseInterface {
+        if ($request->getMethod() === 'OPTIONS') {
+            return new JsonResponse(null, 204, [
+                'Access-Control-Allow-Origin' => '*',
+                'Access-Control-Allow-Methods' => 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers' => 'Content-Type, Authorization',
+                'Access-Control-Max-Age' => '86400',
+            ]);
+        }
+
+        $response = $handler->handle($request);
+        
+        return $response->withHeader('Access-Control-Allow-Origin', '*');
     }
 }
 ```
 
-**CRUD Endpoints:**
+### 7.3 Rate Limiting Middleware
 
-| Method | Endpoint | Action | Response | Use Case |
-|--------|----------|--------|----------|----------|
-| `GET` | `/api/users` | ListAction | `200 + JSON:API collection` | List all users |
-| `GET` | `/api/users/{id}` | ShowAction | `200 + JSON:API item` | Get single user |
-| `POST` | `/api/users` | CreateAction | `201 + JSON:API item` | Create new user |
-| `PUT` | `/api/users/{id}` | UpdateAction | `200 + JSON:API item` | Full update (REST) |
-| `PATCH` | `/api/users/{id}` | PatchAction | `200 + JSON:API item` | Partial update (AJAX) |
+```php
+// src/Middleware/RateLimitMiddleware.php
+namespace App\Middleware;
+
+class RateLimitMiddleware implements MiddlewareInterface
+{
+    private int $maxRequests;
+    private int $windowSeconds;
+
+    public function __construct(int $maxRequests = 60, int $windowSeconds = 60)
+    {
+        $this->maxRequests = $maxRequests;
+        $this->windowSeconds = $windowSeconds;
+    }
+
+    public function process(
+        ServerRequestInterface $request,
+        RequestHandlerInterface $handler
+    ): ResponseInterface {
+        $key = 'rate_limit:' . ($request->getHeaderLine('X-Forwarded-For') ?: 'local');
+        
+        // Implementation with Redis/Memcached would go here
+        
+        return $handler->handle($request)
+            ->withHeader('X-RateLimit-Limit', (string) $this->maxRequests)
+            ->withHeader('X-RateLimit-Remaining', (string) ($this->maxRequests - 1));
+    }
+}
+```
+
+### 7.4 Applying Middleware to Kernel
+
+```php
+// In Kernel
+$this->router->middleware(new SecurityMiddleware());
+$this->router->middleware(new CorsMiddleware());
+$this->router->middleware(new RateLimitMiddleware(100, 60));
+```
+
+---
+
+## 8. API RESTfulness CRUD
+
+**Full CRUD operations with HAL+JSON responses.**
+
+### 8.1 API Endpoints
+
+| Method | Endpoint | Action | Response | Description |
+|--------|----------|--------|----------|-------------|
+| `GET` | `/api/users` | ListAction | `200 + HAL collection` | List all users |
+| `GET` | `/api/users/{id}` | ShowAction | `200 + HAL resource` | Get single user |
+| `POST` | `/api/users` | CreateAction | `201 + HAL resource` | Create user |
+| `PUT` | `/api/users/{id}` | UpdateAction | `200 + HAL resource` | Full update |
+| `PATCH` | `/api/users/{id}` | PatchAction | `200 + HAL resource` | Partial update |
 | `DELETE` | `/api/users/{id}` | DeleteAction | `204 No Content` | Delete user |
 
-**PUT vs PATCH Example:**
+### 8.2 HAL Response Examples
 
-```bash
-# PUT - Full replacement (RESTful)
-PUT /api/users/1
-{
-  "email": "new@example.com",
-  "password": "secret",
-  "roles": ["ROLE_USER"]
-}
-
-# PATCH - Partial update (AJAX/SPAs)
-PATCH /api/users/1
-{
-  "email": "patched@example.com"
-}
-```
-
-**JSON:API Response Format:**
-
+**Single Resource (GET /api/users/1):**
 ```json
 {
-  "data": [
-    {
-      "type": "users",
-      "id": "1",
-      "attributes": {
-        "email": "user@example.com",
-        "roles": ["ROLE_USER"],
-        "created_at": "2024-01-15T10:30:00Z"
-      }
-    }
-  ],
-  "meta": {
-    "total": 25
+  "_links": {
+    "self": { "href": "/api/users/1" },
+    "collection": { "href": "/api/users" }
+  },
+  "user": {
+    "id": 1,
+    "email": "user@example.com",
+    "roles": ["ROLE_USER"],
+    "created_at": "2024-01-15T10:30:00Z"
   }
 }
 ```
 
-### 3️⃣ AJAX/SPA — Asynchronous Client
-
-**When to use:** Real-time apps, dashboards, interactive UIs.
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│                    SPA ARCHITECTURE                          │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│   Browser (React/Vue/Svelte)                                 │
-│        │                                                     │
-│        ├── GET /api/users ──────────────▶ Oryx ADR API      │
-│        │                                                     │
-│        ├── POST /api/users ───────────▶ Oryx ADR API        │
-│        │                                                     │
-│        └── PATCH /api/users/1 ──────────▶ Oryx ADR API      │
-│                                                              │
-│   State Management (Redux/Pinia/Store)                      │
-│        │                                                     │
-│        ├── Optimistic Updates                                │
-│        ├── Local Cache (React Query/SWR)                    │
-│        └── IndexedDB (offline support)                       │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
+**Collection (GET /api/users):**
+```json
+{
+  "_links": {
+    "self": { "href": "/api/users" }
+  },
+  "_embedded": {
+    "users": [
+      { "id": 1, "email": "user1@example.com", ... },
+      { "id": 2, "email": "user2@example.com", ... }
+    ]
+  },
+  "_meta": {
+    "total": 2,
+    "page": 1,
+    "per_page": 20
+  }
+}
 ```
 
-**AJAX vs REST Payload Comparison:**
-
-| Aspect | REST (PUT) | AJAX (PATCH) |
-|--------|------------|--------------|
-| **Method** | PUT | PATCH |
-| **Payload** | Full user | Only changed fields |
-| **Bandwidth** | 500 bytes | 50 bytes |
-| **Example** | `{"id":1,"email":"a","roles":[],"password":"x"}` | `{"email":"new@example.com"}` |
-
-### 4️⃣ PWA (Progressive Web App) — Native-Like
-
-**When to use:** Mobile-first apps, offline-first requirements, installable apps.
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│                    PWA FEATURES                              │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│   ┌─────────────┐  ┌─────────────┐  ┌─────────────┐       │
-│   │   Service   │  │   Web App   │  │   Manifest  │       │
-│   │   Worker    │  │   Cache     │  │   JSON      │       │
-│   ├─────────────┤  ├─────────────┤  ├─────────────┤       │
-│   │ Background  │  │ Static +    │  │ Installable │       │
-│   │ Sync        │  │ Dynamic     │  │ Home Screen │       │
-│   │ Offline     │  │ Files       │  │ Icons       │       │
-│   └─────────────┘  └─────────────┘  └─────────────┘       │
-│                                                              │
-│   manifest.json (auto-served at /manifest.json)             │
-│   {                                                         │
-│     "name": "Oryx ORM App",                                │
-│     "short_name": "OryxApp",                               │
-│     "display": "standalone",                                │
-│     "start_url": "/"                                       │
-│   }                                                         │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
+**Error (400/404/422/500):**
+```json
+{
+  "_error": {
+    "status": 404,
+    "title": "Not Found",
+    "detail": "User with ID 999 not found"
+  }
+}
 ```
 
-### 📊 Pattern Comparison Matrix
+### 8.3 Kernel Routes Registration
 
-| Aspect | MVC | ADR API | AJAX/SPA | PWA |
-|--------|-----|---------|----------|-----|
-| **Rendering** | Server | None | Client | Client |
-| **State** | Stateless | Stateless | Stateful | Stateful |
-| **SEO** | ✅ Excellent | ✅ With SSR | ❌ Needs SSR | ⚠️ Hybrid |
-| **Performance** | ⚠️ Reload | ✅ Fast | ✅ Fast | ✅ Fastest |
-| **Offline** | ❌ No | ❌ No | ⚠️ Limited | ✅ Full |
-| **Complexity** | Low | Medium | High | Very High |
-| **Bundle Size** | 0 KB | 0 KB | 100-500 KB | 100-500 KB |
+```php
+// src/App/Kernel.php
+private function registerRoutes(): void
+{
+    // Health check
+    $this->router->map('GET', '/health', fn() => new JsonResponse(['status' => 'ok']));
 
-### 🎯 When to Use Each Pattern
+    // User CRUD
+    $this->router->map('GET', '/api/users', [ListAction::class, '__invoke']);
+    $this->router->map('POST', '/api/users', [CreateAction::class, '__invoke']);
+    $this->router->map('GET', '/api/users/{id}', [ShowAction::class, '__invoke']);
+    $this->router->map('PUT', '/api/users/{id}', [UpdateAction::class, '__invoke']);
+    $this->router->map('PATCH', '/api/users/{id}', [PatchAction::class, '__invoke']);
+    $this->router->map('DELETE', '/api/users/{id}', [DeleteAction::class, '__invoke']);
 
-```
-╔════════════════════════════════════════════════════════════════╗
-║                DECISION FLOWCHART                            ║
-╠════════════════════════════════════════════════════════════════╣
-║                                                                ║
-║   Need SEO + Simple? ──▶ Use MVC                            ║
-║         │                                                    ║
-║         ▼                                                    ║
-║   API for Mobile/Native? ──▶ Use ADR                         ║
-║         │                                                    ║
-║         ▼                                                    ║
-║   Real-time + Interactive? ──▶ Use AJAX/SPA                   ║
-║         │                                                    ║
-║         ▼                                                    ║
-║   Offline + Installable? ──▶ Use PWA                          ║
-║                                                                ║
-╚════════════════════════════════════════════════════════════════╝
-```
-
-### 🔗 The Unified Stack (Our Web Skeleton)
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    ORYX WEB SKELETON                            │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│   ┌─────────────────────────────────────────────────────────┐   │
-│   │                    Frontend Layer                        │   │
-│   │  ┌─────────┐  ┌─────────┐  ┌─────────┐               │   │
-│   │  │   MVC   │  │   SPA   │  │   PWA   │               │   │
-│   │  │ (Pages) │  │ (React) │  │ (Vue)   │               │   │
-│   │  └────┬────┘  └────┬────┘  └────┬────┘               │   │
-│   │       │              │              │                   │   │
-│   └───────┼──────────────┼──────────────┼───────────────────┘   │
-│           │              │              │                       │
-│           └──────────────┴──────────────┘                       │
-│                          │                                     │
-│   ┌─────────────────────▼─────────────────────────────────┐  │
-│   │                    ADR API Layer                          │  │
-│   │  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐           │  │
-│   │  │  List  │ │  Show  │ │ Create │ │Delete  │           │  │
-│   │  └────────┘ └────────┘ └────────┘ └────────┘           │  │
-│   │         │           │           │           │            │  │
-│   └─────────┼───────────┼───────────┼───────────┼────────────┘  │
-│             │           │           │           │              │
-│   ┌─────────▼───────────▼───────────▼───────────▼────────────┐  │
-│   │                    Domain Layer                          │  │
-│   │  ┌─────────┐  ┌─────────┐  ┌─────────┐                │  │
-│   │  │  User   │  │  Post   │  │  Group  │   Entity       │  │
-│   │  └────┬────┘  └────┬────┘  └────┬────┘                │  │
-│   │       │            │            │                       │  │
-│   │  ┌────▼────────────▼────────────▼────┐                │  │
-│   │  │        Doctrine ORM               │                │  │
-│   │  │   EntityManager + UnitOfWork      │                │  │
-│   │  └─────────────────┬────────────────┘                │  │
-│   │                    │                                   │  │
-│   └────────────────────┼───────────────────────────────────┘  │
-│                        │                                        │
-│   ┌────────────────────▼───────────────────────────────────┐  │
-│   │                  Database Layer                          │  │
-│   │  ┌──────────┐  ┌──────────┐  ┌──────────┐             │  │
-│   │  │ MariaDB  │  │  MySQL  │  │ SQLite   │   (dev)    │  │
-│   │  └──────────┘  └──────────┘  └──────────┘             │  │
-│   └──────────────────────────────────────────────────────────┘  │
-│                                                                  │
-└──────────────────────────────────────────────────────────────────┘
+    // PWA Manifest
+    $this->router->map('GET', '/manifest.json', fn() => new JsonResponse([
+        'name' => 'Oryx ORM App',
+        'short_name' => 'OryxApp',
+        'display' => 'standalone',
+        'start_url' => '/',
+    ]));
+}
 ```
 
 ---
 
-## 🧪 Development
+## 9. Running the Application
+
+### 9.1 Development Server
 
 ```bash
-# Install magical dependencies
-composer install
+# Using PHP built-in server
+php -S localhost:8080 -t public
 
-# Cast tests
+# Using Composer script
+composer serve
+```
+
+### 9.2 Access Points
+
+| URL | Pattern | Entry |
+|-----|---------|-------|
+| `http://localhost:8080/` | MVC | Vanilla HTML |
+| `http://localhost:8080/users` | MVC | Vanilla HTML |
+| `http://localhost:8080/api/users` | ADR | HAL+JSON |
+| `http://localhost:8080/api/users/1` | ADR | HAL+JSON |
+| `http://localhost:8080/manifest.json` | PWA | JSON Manifest |
+
+### 9.3 Testing
+
+```bash
+# Run all tests
 composer test
 
-# Check spell syntax
-composer cs-check
+# Run specific suite
+vendor/bin/phpunit --testsuite Action
 
-# Fix common typos
-composer cs-fix
+# Run with coverage
+vendor/bin/phpunit --coverage-text
+```
 
-# Analyze magical abilities
-composer stan
+### 9.4 Console Commands
+
+```bash
+# List commands
+bin/console list
+
+# Generate entities from XML
+bin/console oryx:entities:generate
+
+# Doctrine migrations
+bin/console doctrine:migrations:migrate
+bin/console doctrine:migrations:diff
 ```
 
 ---
 
-## 📜 License
+## Summary
 
-MIT - Free as in magical freedom!
+| Layer | Pattern | HTTP | Templates | Dependencies |
+|-------|---------|------|-----------|---------------|
+| **MVC** | Controller → Model → View | Vanilla PHP | PHP | Doctrine ORM |
+| **ADR** | Action → Domain → Responder | laminas/diactoros | JSON:HAL | League Fractal |
+| **PWA** | Service Worker + Manifest | Both | Cache | Offline-first |
+
+**Key Files:**
+```
+├── public/
+│   ├── index.php      # Unified entry (routes MVC ↔ ADR)
+│   ├── mvc.php        # MVC only
+│   └── api.php        # ADR only
+├── src/
+│   ├── Http/          # Vanilla MVC HTTP (no dependencies)
+│   ├── Controller/    # MVC Controllers
+│   ├── View/          # PHP Templates
+│   ├── Action/        # ADR Actions
+│   ├── Responder/     # JSON:HAL Responders
+│   ├── Transformer/   # League Fractal Transformers
+│   └── Fixture/       # League Factory Muffin
+└── tests/
+    ├── Action/        # ADR Action Tests
+    ├── Unit/          # Unit Tests
+    └── factories/      # Factory Definitions
+```
 
 ---
 
-*"Muggles have invented something called the Internet, but wizards have Oryx."* — Albus Dumbledore
+*"The best architecture is the one that fits your needs."* — Unknown

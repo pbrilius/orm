@@ -21,6 +21,9 @@ use App\Action\User\UpdateAction;
 use App\Action\User\PatchAction;
 use App\Action\User\DeleteAction;
 use App\Repository\UserRepository;
+use App\Middleware\SecurityMiddleware;
+use App\Middleware\CorsMiddleware;
+use App\Middleware\RateLimitMiddleware;
 use League\Fractal\Manager as FractalManager;
 use League\Fractal\Serializer\JsonApiSerializer;
 use Oryx\ORM\EntityManagerFactory;
@@ -126,8 +129,15 @@ class Kernel
         $strategy = new JsonStrategy(new ResponseFactory());
         $this->router->setStrategy($strategy);
 
+        $this->router->middleware(new SecurityMiddleware());
+        $this->router->middleware(new CorsMiddleware());
+        $this->router->middleware(new RateLimitMiddleware(100, 60));
+
         $this->router->map('GET', '/health', function (ServerRequestInterface $request): ResponseInterface {
             return new JsonResponse([
+                '_links' => [
+                    'self' => ['href' => '/health'],
+                ],
                 'status' => 'ok',
                 'environment' => $this->environment,
                 'timestamp' => date('c'),

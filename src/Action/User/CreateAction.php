@@ -6,12 +6,11 @@ namespace App\Action\User;
 
 use App\Fixture\FixtureLoader;
 use App\Entity\User;
+use App\Responder\JsonHalResponder;
 use League\Fractal\Manager;
 use League\Fractal\Resource\Item;
-use League\Fractal\Serializer\JsonApiSerializer;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Laminas\Diactoros\Response\JsonResponse;
 
 class CreateAction
 {
@@ -22,7 +21,6 @@ class CreateAction
     {
         $this->loader = $loader;
         $this->fractal = new Manager();
-        $this->fractal->setSerializer(new JsonApiSerializer());
     }
 
     public function __invoke(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
@@ -30,13 +28,10 @@ class CreateAction
         $body = json_decode((string) $request->getBody(), true);
 
         if (empty($body['email']) || empty($body['password'])) {
-            return new JsonResponse([
-                'errors' => [[
-                    'status' => '422',
-                    'title' => 'Unprocessable Entity',
-                    'detail' => 'Email and password are required',
-                ]],
-            ], 422);
+            return JsonHalResponder::unprocessableEntity([
+                ['field' => 'email', 'message' => 'Email is required'],
+                ['field' => 'password', 'message' => 'Password is required'],
+            ]);
         }
 
         $user = $this->loader->make(User::class);
@@ -50,8 +45,14 @@ class CreateAction
         $resource = new Item($user, new \App\Transformer\Resource\UserTransformer());
         $data = $this->fractal->createData($resource)->toArray();
 
-        return new JsonResponse($data, 201, [
-            'Content-Type' => 'application/vnd.api+json',
-        ]);
+        return JsonHalResponder::created(
+            'user',
+            'new',
+            $data,
+            [
+                'collection' => '/api/users',
+                'self' => '/api/users/new',
+            ]
+        );
     }
 }
