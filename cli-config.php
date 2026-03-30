@@ -35,7 +35,7 @@ $doctrineConfig = new Configuration();
 
 // Set up metadata driver using our XML driver
 $driver = new XmlDriver([
-    __DIR__ . '/src/Schema/definitions',
+    'App\Entity' => __DIR__ . '/src/Schema/definitions',
 ]);
 $doctrineConfig->setMetadataDriverImpl($driver);
 

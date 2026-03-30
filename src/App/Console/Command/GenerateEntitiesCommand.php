@@ -13,9 +13,11 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\ORM\Configuration;
 use Doctrine\ORM\EntityManager as DoctrineEntityManager;
+use Doctrine\ORM\Mapping\ClassMetadataFactory;
 use Doctrine\ORM\Proxy\ProxyFactory;
 use Oryx\ORM\Mapping\XmlDriver;
 use Symfony\Component\Dotenv\Dotenv;
+use ReflectionProperty;
 
 /**
  * Generates entity classes and method stubs from your mapping information.
@@ -120,8 +122,16 @@ class GenerateEntitiesCommand extends Command
         // Create Doctrine EntityManager instance
         $entityManager = DoctrineEntityManager::create($connection, $doctrineConfig);
 
-        // Get metadata factory from the Doctrine EntityManager
-        $metadataFactory = $entityManager->getMetadataFactory();
+        // Create a metadata factory and set the driver by reflection
+        $metadataFactory = new ClassMetadataFactory();
+        // Set the driver property
+        $driverReflection = new ReflectionProperty(ClassMetadataFactory::class, 'driver');
+        $driverReflection->setAccessible(true);
+        $driverReflection->setValue($metadataFactory, $xmlDriver);
+        // Set the initialized flag to true to prevent initialize() from being called
+        $initializedReflection = new ReflectionProperty(ClassMetadataFactory::class, 'initialized');
+        $initializedReflection->setAccessible(true);
+        $initializedReflection->setValue($metadataFactory, true);
 
         // Get all metadata
         $metadatas = $metadataFactory->getAllMetadata();
