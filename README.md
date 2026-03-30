@@ -1,6 +1,6 @@
-# oryx/orm
+# oryx/orm Web Skeleton
 
-DQL-centric ORM for PHP 8.2+ with seamless integration to oryx/mvc and oryx/adr architectures.
+DQL-centric ORM for PHP 8.2+ with seamless integration to **oryx/mvc** and **oryx/adr** architectures.
 
 ## Features
 
@@ -26,21 +26,42 @@ DQL-centric ORM for PHP 8.2+ with seamless integration to oryx/mvc and oryx/adr 
 composer install
 ```
 
-## Architecture Overview
+## Package Integration
+
+### Symfony Components
+
+| Package | Usage |
+|---------|-------|
+| `symfony/console` | `bin/console` CLI commands |
+| `symfony/dotenv` | `$dotenv->bootEnv('.env')` |
+| `symfony/event-dispatcher` | `$dispatcher->dispatch(new Event())` |
+
+### League Packages
+
+| Package | Usage |
+|---------|-------|
+| `league/route` | `$router->map('GET', '/path', Handler::class)` |
+| `league/fractal` | `$fractal->createData($resource)->toArray()` |
+| `league/container` | `$container->get(Service::class)` |
+| `league/event` | `EventEmitter` for domain events |
+| `league/pipeline` | `PipelineBuilder` for processing |
+| `league/tactician` | Command bus pattern |
+
+### Oryx Packages
+
+| Package | Usage |
+|---------|-------|
+| `oryx/mvc` | MVC dispatcher: Controller → Model → View |
+| `oryx/adr` | ADR dispatcher: Action → Domain → Responder |
+| `oryx/orm` | EntityManager factory for Doctrine ORM |
+
+## Architecture Patterns
 
 ### ADR Pattern (Action-Domain-Responder)
 
 ```
-Request → Router → Action → Domain/Repository → Responder → Response
+Request → Router → Action → Domain/Repository → Fractal → JSON Response
 ```
-
-The ADR pattern separates concerns into three layers:
-
-| Layer | Responsibility | Location |
-|-------|---------------|----------|
-| **Action** | HTTP handling, input validation | `src/Action/` |
-| **Domain** | Business logic, entities | `src/Entity/` |
-| **Responder** | Response formatting | `src/Transformer/` |
 
 ### MVC Pattern (Model-View-Controller)
 
@@ -48,121 +69,44 @@ The ADR pattern separates concerns into three layers:
 Request → FrontController → Controller → Model → View → Response
 ```
 
-## Package Integration
+## League/Fractal Usage Examples
 
-### Symfony Components
-
-| Package | Purpose |
-|---------|---------|
-| `symfony/console` | CLI commands (`bin/console`) |
-| `symfony/dotenv` | Environment variable loading |
-| `symfony/event-dispatcher` | Event handling |
-| `symfony/string` | String utilities |
-
-### League Packages
-
-| Package | Purpose |
-|---------|---------|
-| `league/route` | PSR-7/PSR-15 HTTP routing |
-| `league/fractal` | JSON:API transformations |
-| `league/container` | Dependency injection |
-| `league/event` | Event management |
-| `league/pipeline` | Pipeline pattern |
-| `league/tactician` | Command bus |
-| `league/uri` | URI manipulation |
-
-## Console Commands
-
-```bash
-# List available commands
-bin/console list
-
-# Generate entities from XML schemas
-bin/console oryx:entities:generate
-
-# Run Doctrine migrations
-bin/console doctrine:migrations:migrate
-
-# Generate migration from schema diff
-bin/console doctrine:migrations:diff
-```
-
-## RESTful vs AJAX CRUD
-
-### RESTful (Stateless)
-
-Traditional REST API where client manages state.
+### 1. Transformer Definition
 
 ```php
-// RESTful: Full resource representation
-GET    /api/users          → ListAction    → 200 + all users
-GET    /api/users/{id}     → ShowAction    → 200 + single user
-POST   /api/users          → CreateAction  → 201 + created user
-PUT    /api/users/{id}     → UpdateAction  → 200 + updated user
-DELETE /api/users/{id}     → DeleteAction  → 204 + empty
+// src/Transformer/Resource/UserTransformer.php
+namespace App\Transformer\Resource;
 
-// Client sends full payload
-PUT /api/users/1
-{
-  "name": "John",
-  "email": "john@example.com",
-  "groups": [1, 2, 3]
-}
+use App\Entity\User;
+use League\Fractal\TransformerAbstract;
 
-// Response includes full resource
+class UserTransformer extends TransformerAbstract
 {
-  "data": {
-    "id": 1,
-    "type": "users",
-    "attributes": {
-      "name": "John",
-      "email": "john@example.com"
+    protected $availableIncludes = ['posts', 'group'];
+
+    public function transform(User $user): array
+    {
+        return [
+            'id' => $user->getId(),
+            'email' => $user->getEmail(),
+            'roles' => $user->getRoles(),
+            'created_at' => $user->getCreatedAt()->format('c'),
+        ];
     }
-  }
+
+    public function includePosts(User $user)
+    {
+        return $this->collection($user->getPosts(), new PostTransformer());
+    }
+
+    public function includeGroup(User $user)
+    {
+        return $this->item($user->getGroup(), new GroupTransformer());
+    }
 }
 ```
 
-### AJAX (State-Driven)
-
-Modern SPAs where server manages resource state.
-
-```php
-// AJAX: Partial updates, optimistic UI
-GET    /api/users          → ListAction    → 200 + users (paginated)
-GET    /api/users/{id}     → ShowAction    → 200 + user
-PATCH  /api/users/{id}     → UpdateAction  → 200 + updated fields
-DELETE /api/users/{id}     → DeleteAction  → 200 + {deleted: true}
-
-// Client sends only changed fields
-PATCH /api/users/1
-{
-  "email": "new@example.com"
-}
-
-// Server returns minimal response
-{
-  "data": {
-    "id": 1,
-    "email": "new@example.com",
-    "updated_at": "2024-01-15T10:30:00Z"
-  }
-}
-```
-
-### Comparison Matrix
-
-| Aspect | RESTful | AJAX/SPAs |
-|--------|---------|-----------|
-| **State** | Client-managed | Server-managed |
-| **Payload** | Full resource | Partial/diff |
-| **Caching** | HTTP caching | Client-side cache |
-| **Bandwidth** | Higher | Lower |
-| **Complexity** | Simple protocol | Complex client |
-| **Best for** | Public APIs | Real-time apps |
-
-## League Fractal Usage
-
-### Collection Transformation
+### 2. Collection Transformation
 
 ```php
 use League\Fractal\Manager;
@@ -172,24 +116,96 @@ use App\Transformer\Resource\UserTransformer;
 $fractal = new Manager();
 $fractal->setSerializer(new JsonApiSerializer());
 
-$users = $repository->findAll();
+$users = $userRepository->findAll();
 $resource = new Collection($users, new UserTransformer());
 
 $data = $fractal->createData($resource)->toArray();
+// → {"data": [{"id": 1, "type": "users", "attributes": {...}}, ...]}
 ```
 
-### Single Resource Transformation
+### 3. Single Resource with Includes
 
 ```php
 use League\Fractal\Resource\Item;
 
-$user = $repository->find($id);
+$user = $userRepository->find($id);
 $resource = new Item($user, new UserTransformer());
 
 $data = $fractal->createData($resource)->toArray();
+// → {"data": {...}, "included": {"posts": [...], "group": {...}}}
 ```
 
-## ADR Action Example
+## League/Route Usage
+
+```php
+use League\Route\Router;
+use League\Route\Strategy\JsonStrategy;
+use Laminas\Diactoros\ResponseFactory;
+
+$router = new Router();
+$router->setStrategy(new JsonStrategy(new ResponseFactory()));
+
+// Map routes
+$router->map('GET', '/api/users', [ListAction::class, '__invoke']);
+$router->map('GET', '/api/users/{id}', [ShowAction::class, '__invoke']);
+$router->map('POST', '/api/users', [CreateAction::class, '__invoke']);
+$router->map('PUT', '/api/users/{id}', [UpdateAction::class, '__invoke']);
+$router->map('DELETE', '/api/users/{id}', [DeleteAction::class, '__invoke']);
+
+// Dispatch request
+$response = $router->dispatch($request);
+```
+
+## Oryx/MVC + Oryx/ADR Integration
+
+### Kernel Setup
+
+```php
+// src/App/Kernel.php
+namespace App;
+
+use League\Container\Container;
+use League\Route\Router;
+use League\Route\Strategy\JsonStrategy;
+use Laminas\Diactoros\ResponseFactory;
+use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\Dotenv\Dotenv;
+use Doctrine\ORM\EntityManager;
+use League\Fractal\Manager as FractalManager;
+use League\Fractal\Serializer\JsonApiSerializer;
+use Oryx\ORM\EntityManagerFactory;
+
+class Kernel
+{
+    private Container $container;
+    private Router $router;
+    private EntityManager $em;
+    private FractalManager $fractal;
+
+    public function __construct(string $environment = 'dev', bool $debug = true)
+    {
+        $this->container = new Container();
+        $this->router = new Router();
+        $this->dispatcher = new EventDispatcher();
+        $this->boot();
+    }
+
+    private function boot(): void
+    {
+        (new Dotenv())->bootEnv(dirname(__DIR__, 2) . '/.env');
+        
+        $this->em = EntityManagerFactory::createFromEnv();
+        $this->fractal = new FractalManager();
+        $this->fractal->setSerializer(new JsonApiSerializer());
+        
+        $this->router->setStrategy(new JsonStrategy(new ResponseFactory()));
+        $this->registerServices();
+        $this->registerRoutes();
+    }
+}
+```
+
+### ADR Action Example
 
 ```php
 // src/Action/User/ListAction.php
@@ -208,10 +224,8 @@ class ListAction
         private Manager $fractal
     ) {}
 
-    public function __invoke(
-        ServerRequestInterface $request,
-        ResponseInterface $response
-    ): ResponseInterface {
+    public function __invoke(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
         $users = $this->repository->findAll();
         
         $resource = new Collection($users, new \App\Transformer\Resource\UserTransformer());
@@ -223,38 +237,46 @@ class ListAction
 }
 ```
 
-## Kernel Integration
+## RESTful vs AJAX CRUD
+
+### RESTful (Stateless)
 
 ```php
-// src/App/Kernel.php
-namespace App;
+// RESTful: Full resource representation
+GET    /api/users          → ListAction    → 200 + all users
+GET    /api/users/{id}     → ShowAction    → 200 + single user
+POST   /api/users          → CreateAction  → 201 + created user
+PUT    /api/users/{id}     → UpdateAction  → 200 + updated user
+DELETE /api/users/{id}     → DeleteAction  → 204 + empty
+```
 
-use Laminas\Diactoros\Response\JsonResponse;
-use League\Route\Router;
-use League\Route\Strategy\JsonStrategy;
-use Laminas\Diactoros\ResponseFactory;
-use Doctrine\ORM\EntityManager;
-use League\Fractal\Manager as FractalManager;
-use League\Fractal\Serializer\JsonApiSerializer;
-use Oryx\ORM\EntityManagerFactory;
+### AJAX/SPAs (State-Driven)
 
-class Kernel
-{
-    private Router $router;
-    private EntityManager $em;
-    private FractalManager $fractal;
+```php
+// AJAX: Partial updates, optimistic UI
+PATCH  /api/users/{id}     → UpdateAction  → 200 + changed fields only
+```
 
-    public function __construct()
-    {
-        $this->em = EntityManagerFactory::createFromEnv();
-        $this->fractal = new FractalManager();
-        $this->fractal->setSerializer(new JsonApiSerializer());
-        $this->router = new Router();
-        
-        $this->router->setStrategy(new JsonStrategy(new ResponseFactory()));
-        $this->registerRoutes();
-    }
-}
+### Comparison
+
+| Aspect | RESTful | AJAX/SPAs |
+|--------|---------|-----------|
+| **State** | Client-managed | Server-managed |
+| **Payload** | Full resource | Partial/diff |
+| **Caching** | HTTP caching | Client-side cache |
+| **Bandwidth** | Higher | Lower |
+
+## Console Commands
+
+```bash
+# List available commands
+bin/console list
+
+# Generate entities from XML schemas
+bin/console oryx:entities:generate
+
+# Run Doctrine migrations
+bin/console doctrine:migrations:migrate
 ```
 
 ## Development
@@ -262,6 +284,9 @@ class Kernel
 ```bash
 # Install dependencies
 composer install
+
+# Run tests
+composer test
 
 # Check code style
 composer cs-check
@@ -271,9 +296,6 @@ composer cs-fix
 
 # Run static analysis
 composer stan
-
-# Run tests
-composer test
 ```
 
 ## License
