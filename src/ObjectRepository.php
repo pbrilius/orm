@@ -27,7 +27,7 @@ class ObjectRepository
         return $this->repository->find($id);
     }
 
-    public function findBy(array $criteria, array $orderBy = null, int $limit = null, int $offset = null)
+    public function findBy(array $criteria, ?array $orderBy = null, ?int $limit = null, ?int $offset = null)
     {
         return $this->repository->findBy($criteria, $orderBy, $limit, $offset);
     }
@@ -37,7 +37,7 @@ class ObjectRepository
         return $this->repository->findOneBy($criteria);
     }
 
-    public function createQueryBuilder(string $alias = null): QueryBuilder
+    public function createQueryBuilder(?string $alias = null): QueryBuilder
     {
         return new QueryBuilder($this->em->getDoctrineEntityManager()->createQueryBuilder($this->entityName, $alias));
     }
