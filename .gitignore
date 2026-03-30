@@ -1,6 +1,5 @@
 /vendor/
 /.env
-.phpunit.result.cache
 reports/
 coverage/
 .idea/
@@ -8,3 +7,9 @@ coverage/
 *.swp
 *.log
 composer.lock
+
+# prototype.in
+.php-cs-fixer.cache
+.php-cs-fixer.php
+phpunit.xml
+.phpunit.result.cache
