@@ -8,7 +8,7 @@
 5. [League Factory Muffin Fixtures](#5-league-factory-muffin-fixtures)
 6. [PSR Middleware Security](#6-psr-middleware-security)
 7. [HAL+JSON API](#7-haljson-api)
-8. [Running the Application](#8-running-the-application)
+8. [Running the Application](#9-running-the-application)
 
 ---
 
@@ -175,18 +175,39 @@ class MvcApplication
 
 **ADR uses PSR-7/PSR-15 for modern HTTP handling.**
 
-### 4.1 Kernel Setup
+### 4.1 Kernel + Routing atskirumas
+
+Maršrutai atskirti nuo Kernelio į `App\Routing\*Routes` klases - lengviau tvarkyti ir testuoti.
 
 ```php
 // src/App/Kernel.php
 namespace App;
 
-use Laminas\Diactoros\ServerRequestFactory;
+class Kernel
+{
+    private AdrRoutes $adrRoutes;
+
+    public function __construct(string $environment = 'dev', bool $debug = true)
+    {
+        $this->adrRoutes = new AdrRoutes();
+    }
+
+    public function handle(ServerRequestInterface $request): ResponseInterface
+    {
+        return $this->adrRoutes->getRouter()->dispatch($request);
+    }
+}
+```
+
+```php
+// src/Routing/AdrRoutes.php
+namespace App\Routing;
+
 use League\Route\Router;
 use League\Route\Strategy\JsonStrategy;
 use Laminas\Diactoros\ResponseFactory;
 
-class Kernel
+class AdrRoutes
 {
     private Router $router;
 
@@ -194,12 +215,19 @@ class Kernel
     {
         $this->router = new Router();
         $this->router->setStrategy(new JsonStrategy(new ResponseFactory()));
-        $this->registerRoutes();
+        $this->register();
     }
 
-    public function handle(ServerRequestInterface $request): ResponseInterface
+    public function getRouter(): Router
     {
-        return $this->router->dispatch($request);
+        return $this->router;
+    }
+
+    private function register(): void
+    {
+        $this->router->map('GET', '/health', fn() => new JsonResponse(['status' => 'ok']));
+        $this->router->map('GET', '/api/users', [ListAction::class, '__invoke']);
+        // ... kiti maršrutai
     }
 }
 ```
@@ -994,18 +1022,46 @@ curl -X DELETE http://localhost:8000/api/users/1
 
 ### 8.10 Middleware saugumas
 
-Žr. skyrių #7 PSR Middleware Security.
+Žr. skyrių #6 PSR Middleware Security.
 
-### 8.11 Kernel maršrutų registracija
+### 8.11 Maršrutų struktūra
 
+Maršrutai atskirti nuo Kernelio - lengviau prižiūrėti:
+
+```
+src/
+├── App/Kernel.php              # tik inicializacija + middleware
+├── Routing/
+│   ├── AdrRoutes.php          # API maršrutai
+│   └── MvcRoutes.php          # MVC maršrutai
+├── Action/User/                # ADR veiksmai
+│   ├── ListAction.php
+│   └── ...
+└── Controller/                 # MVC kontroleriai
+    └── UserController.php
+```
+
+**Kernelas tik prijungia routes + middleware:**
 ```php
 // src/App/Kernel.php
 private function registerRoutes(): void
 {
-    // Health check
+    $this->adrRoutes = new AdrRoutes();
+    $router = $this->adrRoutes->getRouter();
+
+    $router->middleware(new SecurityMiddleware());
+    $router->middleware(new CorsMiddleware());
+    $router->middleware(new RateLimitMiddleware(100, 60));
+    $router->middleware(new CsrfMiddleware());
+}
+```
+
+**ADR maršrutai (AdrRoutes.php):**
+```php
+private function register(): void
+{
     $this->router->map('GET', '/health', fn() => new JsonResponse(['status' => 'ok']));
 
-    // User CRUD
     $this->router->map('GET', '/api/users', [ListAction::class, '__invoke']);
     $this->router->map('POST', '/api/users', [CreateAction::class, '__invoke']);
     $this->router->map('GET', '/api/users/{id}', [ShowAction::class, '__invoke']);
@@ -1013,13 +1069,32 @@ private function registerRoutes(): void
     $this->router->map('PATCH', '/api/users/{id}', [PatchAction::class, '__invoke']);
     $this->router->map('DELETE', '/api/users/{id}', [DeleteAction::class, '__invoke']);
 
-    // PWA Manifest
     $this->router->map('GET', '/manifest.json', fn() => new JsonResponse([
         'name' => 'Oryx ORM App',
         'short_name' => 'OryxApp',
         'display' => 'standalone',
         'start_url' => '/',
     ]));
+}
+```
+
+**MVC maršrutai (MvcRoutes.php):**
+```php
+private function register(): void
+{
+    $this->router->get('/', function (Request $req) {
+        return new Response($this->view->render('home', ['title' => 'Oryx ORM']));
+    });
+
+    $this->router->get('/users', function (Request $req) {
+        $data = $this->controllers['user']->index();
+        return new Response($this->view->render('users/index', $data));
+    });
+
+    $this->router->get('/users/{id}', function (Request $req, array $params) {
+        $user = $this->controllers['user']->show((int) $params['id']);
+        return new Response($this->view->render('users/show', ['user' => $user]));
+    });
 }
 ```
 
