@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App;
@@ -33,7 +34,7 @@ class Kernel
         $this->container = new Container();
         $this->router = new Router();
         $this->dispatcher = new EventDispatcher();
-        
+
         $this->boot();
     }
 
@@ -69,7 +70,7 @@ class Kernel
     private function registerRoutes(): void
     {
         $listAction = $this->container->get(ListAction::class);
-        
+
         $this->router->map('GET', '/users', [$listAction, '__invoke']);
         $this->router->map('GET', '/api/users', [$listAction, '__invoke']);
         $this->router->map('GET', '/health', function (ServerRequestInterface $request): ResponseInterface {
