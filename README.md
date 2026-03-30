@@ -601,7 +601,86 @@ $this->router->middleware(new RateLimitMiddleware(100, 60));
 }
 ```
 
-### 8.3 Kernel Routes Registration
+**Embedding Related Resources (GET /api/users/1?include=posts,group):**
+
+```json
+{
+  "_links": {
+    "self": { "href": "/api/users/1" }
+  },
+  "_embedded": {
+    "user": {
+      "id": 1,
+      "email": "user@example.com",
+      "roles": ["ROLE_USER"]
+    },
+    "posts": [
+      {
+        "id": 1,
+        "title": "First Post",
+        "content": "Hello world..."
+      }
+    ],
+    "group": {
+      "id": 1,
+      "name": "Administrators"
+    }
+  }
+}
+```
+
+### 8.3 Using League Fractal Transformers
+
+League Fractal transforms entities to arrays with optional includes for embedding related resources.
+
+**Transformer definition:**
+```php
+// src/Transformer/Resource/UserTransformer.php
+class UserTransformer extends TransformerAbstract
+{
+    protected $availableIncludes = ['posts', 'group'];
+
+    public function transform(User $user): array
+    {
+        return [
+            'id' => $user->getId(),
+            'email' => $user->getEmail(),
+            'roles' => $user->getRoles(),
+            'created_at' => $user->getCreatedAt()->format('c'),
+        ];
+    }
+
+    public function includePosts(User $user)
+    {
+        return $this->collection($user->getPosts(), new PostTransformer());
+    }
+
+    public function includeGroup(User $user)
+    {
+        return $this->item($user->getGroup(), new GroupTransformer());
+    }
+}
+```
+
+**Using Fractal Manager with includes:**
+```php
+use League\Fractal\Manager;
+use League\Fractal\Resource\Collection;
+use League\Fractal\Serializer\ArraySerializer;
+
+$fractal = new Manager();
+$fractal->setSerializer(new ArraySerializer());
+
+// Parse ?include=posts,group from query params
+if ($include = $request->getQueryParams()['include'] ?? null) {
+    $fractal->parseIncludes($include);
+}
+
+$resource = new Collection($users, new UserTransformer());
+$data = $fractal->createData($resource)->toArray();
+```
+
+### 8.4 Kernel Routes Registration
 
 ```php
 // src/App/Kernel.php
