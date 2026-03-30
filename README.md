@@ -36,21 +36,21 @@ Welcome, young wizard! In this enchanted chronicle, you shall learn the ancient 
 
 ---
 
-## 🏠 The Oryx/MVC House
+## 🏠 The Oryx/MVC House (Vanilla PHP)
 
-Like Gryffindor, **MVC** is the classic house of web development.
+**MVC** uses vanilla PHP - no laminas/diactoros dependency.
 
 ```
 ╔═══════════════════════════════════════════════════════════════╗
 ║                     MVC FLOW CHART                            ║
 ╠═══════════════════════════════════════════════════════════════╣
 ║                                                               ║
-║   HTTP Request                                                ║
+║   HTTP Request (Vanilla)                                     ║
 ║       │                                                       ║
 ║       ▼                                                       ║
 ║   ┌──────────────┐    ┌─────────────┐    ┌──────────────┐  ║
 ║   │  Controller  │───▶│    Model    │───▶│     View     │  ║
-║   │  (Harry)     │    │  (Hermione) │    │   (Ron)      │  ║
+║   │ (UserCtrl)   │    │  (Doctrine) │    │ (PHP templates)│ ║
 ║   └──────────────┘    └─────────────┘    └──────────────┘  ║
 ║         │                  │                   │              ║
 ║         ▼                  ▼                   ▼              ║
@@ -59,59 +59,94 @@ Like Gryffindor, **MVC** is the classic house of web development.
 ╚═══════════════════════════════════════════════════════════════╝
 ```
 
-### MVC Package Structure
+### MVC Implementation (Vanilla PHP)
 
 ```php
-// vendor/oryx/mvc/src/
-Prototype\Mvc\
-├── Application.php           // The Enchanted Router
-├── AbstractController.php    // Base spell-casting class
-├── ControllerInterface.php   // Contract for Controllers
-├── Controller/
-│   └── HomeController.php    // Specific spell handlers
-├── Model/
-│   ├── AbstractModel.php     // Data manipulation magic
-│   └── ModelInterface.php    // Model contract
-└── View/
-    ├── PlatesView.php        // Template rendering (League Plates)
-    └── ViewInterface.php     // View contract
+// src/Http/Request.php - No laminas/diactoros
+namespace App\Http;
+class Request {
+    public function getMethod(): string { ... }
+    public function getPath(): string { ... }
+    public function get(string $key, $default = null) { ... }
+    public function post(string $key, $default = null) { ... }
+}
+
+// src/Http/Response.php - No laminas/diactoros
+namespace App\Http;
+class Response {
+    public function __construct(string $content, int $status, array $headers);
+    public function send(): void { ... }
+}
+
+// src/Http/Router.php - Vanilla routing
+$router->get('/users', fn($req) => new Response($html));
 ```
 
-### MVC Code Example
+### MVC Routes
+
+| Method | Path | Handler |
+|--------|------|---------|
+| `GET` | `/` | Home page |
+| `GET` | `/users` | User list |
+| `GET` | `/users/create` | Create form |
+| `POST` | `/users/create` | Create user |
+| `GET` | `/users/{id}` | Show user |
+
+### MVC Templates
+
+```
+src/View/templates/
+├── home.php              # Home page
+├── error/404.php         # Error page
+└── users/
+    ├── index.php        # User list
+    ├── show.php         # User detail
+    └── create.php       # Create form
+```
+
+### MVC Code Example (Vanilla PHP)
 
 ```php
-namespace Prototype\Mvc\Controller;
+// src/Controller/UserController.php
+namespace App\Controller;
 
-use Prototype\Mvc\AbstractController;
+use Doctrine\ORM\EntityManagerInterface;
 
-class UserController extends AbstractController
+class UserController
 {
-    public function index(): void
+    private EntityManagerInterface $em;
+
+    public function __construct(EntityManagerInterface $em)
     {
-        $users = $this->model->findAll();
-        $this->render('users/index', ['users' => $users]);
+        $this->em = $em;
     }
 
-    public function show(int $id): void
+    public function index(): array
     {
-        $user = $this->model->findById($id);
-        $this->render('users/show', ['user' => $user]);
+        $users = $this->repository->findAll();
+        return ['users' => $users];
     }
 }
+
+// src/App/MvcApplication.php
+$router->get('/users', function (Request $req) {
+    $data = $this->controllers['user']->index();
+    return new Response($this->view->render('users/index', $data));
+});
 ```
 
 ---
 
-## ⚡ The Oryx/ADR House
+## ⚡ The Oryx/ADR House (laminas/diactoros)
 
-Like Slytherin, **ADR** is the modern house for API sorcerers.
+**ADR** uses laminas/diactoros for PSR-7/PSR-15.
 
 ```
 ╔═══════════════════════════════════════════════════════════════╗
 ║                     ADR FLOW CHART                            ║
 ╠═══════════════════════════════════════════════════════════════╣
 ║                                                               ║
-║   HTTP Request                                                ║
+║   HTTP Request (laminas/Diactoros)                           ║
 ║       │                                                       ║
 ║       ▼                                                       ║
 ║   ┌──────────┐     ┌─────────────┐     ┌────────────────┐    ║
