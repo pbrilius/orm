@@ -51,12 +51,13 @@
     "autoload": {
         "psr-4": {
             "Oryx\\ORM\\": "src/",
-            "App\\": "src/App/"
+            "App\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Oryx\\ORM\\Tests\\": "tests/"
+            "Oryx\\ORM\\Tests\\": "tests/",
+            "App\\Tests\\": "tests/"
         }
     },
     "bin": [
