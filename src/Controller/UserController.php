@@ -47,7 +47,7 @@ class UserController
     public function update(int $id, array $data): ?User
     {
         $user = $this->repository->find($id);
-        
+
         if (!$user) {
             return null;
         }
@@ -71,7 +71,7 @@ class UserController
     public function delete(int $id): bool
     {
         $user = $this->repository->find($id);
-        
+
         if (!$user) {
             return false;
         }

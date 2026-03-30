@@ -38,11 +38,11 @@ class Response
     public function send(): void
     {
         http_response_code($this->statusCode);
-        
+
         foreach ($this->headers as $name => $value) {
             header(sprintf('%s: %s', $name, $value));
         }
-        
+
         echo $this->content;
     }
 }

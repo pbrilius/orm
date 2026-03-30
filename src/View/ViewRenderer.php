@@ -16,7 +16,7 @@ class ViewRenderer
     public function render(string $template, array $data = []): string
     {
         $file = $this->templatePath . '/' . $template . '.php';
-        
+
         if (!file_exists($file)) {
             throw new \RuntimeException("Template not found: {$template}");
         }

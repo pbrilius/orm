@@ -12,7 +12,7 @@ use Doctrine\ORM\EntityManager;
 
 /**
  * MVC Application - Vanilla PHP, no laminas/diactoros.
- * 
+ *
  * Uses:
  * - App\Http\Request (vanilla)
  * - App\Http\Response (vanilla)

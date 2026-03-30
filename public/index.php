@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 /**
  * Web Entry Point - Supports both MVC and ADR modes.
- * 
+ *
  * MVC Mode (default for browser requests):
  * - Uses vanilla PHP: App\Http\Request, App\Http\Response, App\Http\Router
  * - Server-side rendered HTML templates
  * - No laminas/diactoros dependency
- * 
+ *
  * ADR Mode (for API requests):
  * - Uses laminas/diactoros: ServerRequestFactory, JsonResponse
  * - JSON:API responses
