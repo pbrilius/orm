@@ -5,11 +5,10 @@
 2. [Architecture Overview](#2-architecture-overview)
 3. [MVC Pattern (Vanilla PHP)](#3-mvc-pattern-vanilla-php)
 4. [ADR Pattern (laminas/diactoros)](#4-adr-pattern-laminasdiactoros)
-5. [League Fractal Transformers](#5-league-fractal-transformers)
-6. [League Factory Muffin Fixtures](#6-league-factory-muffin-fixtures)
-7. [PSR Middleware Security](#7-psr-middleware-security)
-8. [API RESTfulness CRUD](#8-api-restfulness-crud)
-9. [Running the Application](#9-running-the-application)
+5. [League Factory Muffin Fixtures](#5-league-factory-muffin-fixtures)
+6. [PSR Middleware Security](#6-psr-middleware-security)
+7. [HAL+JSON API](#7-haljson-api)
+8. [Running the Application](#8-running-the-application)
 
 ---
 
@@ -552,57 +551,15 @@ $this->router->middleware(new RateLimitMiddleware(100, 60));
 | `PATCH` | `/api/users/{id}` | PatchAction | `200 + HAL resource` | Partial update |
 | `DELETE` | `/api/users/{id}` | DeleteAction | `204 No Content` | Delete user |
 
-### 8.2 HAL Response Examples
+### 8.2 HAL+JSON: Coadinga API atsakus
 
-**Single Resource (GET /api/users/1):**
-```json
-{
-  "_links": {
-    "self": { "href": "/api/users/1" },
-    "collection": { "href": "/api/users" }
-  },
-  "user": {
-    "id": 1,
-    "email": "user@example.com",
-    "roles": ["ROLE_USER"],
-    "created_at": "2024-01-15T10:30:00Z"
-  }
-}
-```
+**Kas yra HAL?** Hypertext Application Language - standartas, kuris suteikia nuorodas (`_links`) ir įdėtinus resursus (`_embedded`). Skirtumas nuo JSON:API: paprastesnis, lengviau suprasti.
 
-**Collection (GET /api/users):**
-```json
-{
-  "_links": {
-    "self": { "href": "/api/users" }
-  },
-  "_embedded": {
-    "users": [
-      { "id": 1, "email": "user1@example.com", ... },
-      { "id": 2, "email": "user2@example.com", ... }
-    ]
-  },
-  "_meta": {
-    "total": 2,
-    "page": 1,
-    "per_page": 20
-  }
-}
-```
+**Kodėl Fractal?** Transformuoja Doctrine entitetus į masyvus, prideda nuorodas ir įdėtinus resursus.
 
-**Error (400/404/422/500):**
-```json
-{
-  "_error": {
-    "status": 404,
-    "title": "Not Found",
-    "detail": "User with ID 999 not found"
-  }
-}
-```
+### 8.3 Pagrindinės HAL struktūros
 
-**Embedding Related Resources (GET /api/users/1?include=posts,group):**
-
+**1. Vienas resursas (`/api/users/1`):**
 ```json
 {
   "_links": {
@@ -611,33 +568,165 @@ $this->router->middleware(new RateLimitMiddleware(100, 60));
   "_embedded": {
     "user": {
       "id": 1,
-      "email": "user@example.com",
-      "roles": ["ROLE_USER"]
-    },
-    "posts": [
-      {
-        "id": 1,
-        "title": "First Post",
-        "content": "Hello world..."
-      }
-    ],
-    "group": {
-      "id": 1,
-      "name": "Administrators"
+      "email": "admin@versliukai.lt",
+      "roles": ["ROLE_ADMIN"],
+      "created_at": "2024-01-15T10:30:00+02:00",
+      "updated_at": "2024-01-20T15:45:00+02:00"
     }
   }
 }
 ```
 
-### 8.3 Using League Fractal Transformers
+**2. Kolekcija (`/api/users`):**
+```json
+{
+  "_links": {
+    "self": { "href": "/api/users" },
+    "next": { "href": "/api/users?page=2" }
+  },
+  "_embedded": {
+    "users": [
+      { "id": 1, "email": "admin@versliukai.lt", "roles": ["ROLE_ADMIN"] },
+      { "id": 2, "email": "user@versliukai.lt", "roles": ["ROLE_USER"] }
+    ]
+  },
+  "_meta": {
+    "total": 150,
+    "count": 2,
+    "page": 1,
+    "per_page": 2
+  }
+}
+```
 
-League Fractal transforms entities to arrays with optional includes for embedding related resources.
+**3. Klaida (`400/404/422/500`):**
+```json
+{
+  "_error": {
+    "status": 422,
+    "title": "Unprocessable Entity",
+    "detail": "Validation failed",
+    "errors": {
+      "email": "Invalid email format",
+      "password": "Must be at least 8 characters"
+    }
+  }
+}
+```
 
-**Transformer definition:**
+### 8.4 Nuorodos tarp resursų (`_links`)
+
+Nuorodos leidžia klientams naviguoti API be hardkodotų URL'ų:
+
+```json
+{
+  "_links": {
+    "self": { "href": "/api/users/1" },
+    "collection": { "href": "/api/users" },
+    "posts": { "href": "/api/users/1/posts" },
+    "group": { "href": "/api/groups/1" },
+    "edit": { "href": "/api/users/1", "method": "PUT" },
+    "delete": { "href": "/api/users/1", "method": "DELETE" }
+  },
+  "_embedded": {
+    "user": { ... }
+  }
+}
+```
+
+**Praktinis pavyzdys - PWA navigacija:**
+```javascript
+// React/Vue atsakymo apdorojimas
+const response = await fetch('/api/users/1');
+const data = await response.json();
+
+// Naršymas be hardkodo
+const editUrl = data._links.edit.href;  // "/api/users/1"
+const postsUrl = data._links.posts.href; // "/api/users/1/posts"
+```
+
+### 8.5 Įdėtini resursai (`_embedded`)
+
+Įdėtini resursai neleidžia N+1 užklausų problemų - viena užklausa gauna viską.
+
+**Paprasta užklausa (`/api/posts/1`):**
+```json
+{
+  "_links": { "self": { "href": "/api/posts/1" } },
+  "_embedded": {
+    "post": {
+      "id": 1,
+      "title": "Kaip sukurti REST API",
+      "content": "...",
+      "created_at": "2024-01-15T10:30:00+02:00"
+    }
+  }
+}
+```
+
+**Su autoriumi (`/api/posts/1?include=author`):**
+```json
+{
+  "_links": { "self": { "href": "/api/posts/1" } },
+  "_embedded": {
+    "post": {
+      "id": 1,
+      "title": "Kaip sukurti REST API",
+      "content": "..."
+    },
+    "author": {
+      "id": 1,
+      "email": "admin@versliukai.lt",
+      "roles": ["ROLE_ADMIN"]
+    }
+  }
+}
+```
+
+**Su visais ryšiais (`/api/users/1?include=posts,group`):**
+```json
+{
+  "_links": { "self": { "href": "/api/users/1" } },
+  "_embedded": {
+    "user": {
+      "id": 1,
+      "email": "admin@versliukai.lt",
+      "roles": ["ROLE_ADMIN"]
+    },
+    "posts": [
+      {
+        "id": 1,
+        "title": "Kaip sukurti REST API",
+        "content": "..."
+      },
+      {
+        "id": 2,
+        "title": "Middleware saugumas",
+        "content": "..."
+      }
+    ],
+    "group": {
+      "id": 1,
+      "name": "Administratoriai",
+      "created_at": "2024-01-01T00:00:00+02:00"
+    }
+  }
+}
+```
+
+### 8.6 Transformeriai su Fractal
+
+**UserTransformer - transformuoja User entitetą:**
 ```php
 // src/Transformer/Resource/UserTransformer.php
+namespace App\Transformer\Resource;
+
+use App\Entity\User;
+use League\Fractal\TransformerAbstract;
+
 class UserTransformer extends TransformerAbstract
 {
+    // Kuriami "availableIncludes" - ryšiai kuriuos galima įkelti
     protected $availableIncludes = ['posts', 'group'];
 
     public function transform(User $user): array
@@ -647,14 +736,17 @@ class UserTransformer extends TransformerAbstract
             'email' => $user->getEmail(),
             'roles' => $user->getRoles(),
             'created_at' => $user->getCreatedAt()->format('c'),
+            'updated_at' => $user->getUpdatedAt()?->format('c'),
         ];
     }
 
+    // Grąžina Collection (daugelis)
     public function includePosts(User $user)
     {
         return $this->collection($user->getPosts(), new PostTransformer());
     }
 
+    // Grąžina Item (vienas)
     public function includeGroup(User $user)
     {
         return $this->item($user->getGroup(), new GroupTransformer());
@@ -662,25 +754,249 @@ class UserTransformer extends TransformerAbstract
 }
 ```
 
-**Using Fractal Manager with includes:**
+**PostTransformer - postų transformavimas:**
 ```php
+// src/Transformer/Resource/PostTransformer.php
+class PostTransformer extends TransformerAbstract
+{
+    protected $availableIncludes = ['author'];
+
+    public function transform(Post $post): array
+    {
+        return [
+            'id' => $post->getId(),
+            'title' => $post->getTitle(),
+            'content' => $post->getContent(),
+            'created_at' => $post->getCreatedAt()->format('c'),
+        ];
+    }
+
+    public function includeAuthor(Post $post)
+    {
+        return $this->item($post->getAuthor(), new UserTransformer());
+    }
+}
+```
+
+**GroupTransformer - grupių transformavimas:**
+```php
+// src/Transformer/Resource/GroupTransformer.php
+class GroupTransformer extends TransformerAbstract
+{
+    protected $availableIncludes = ['users'];
+
+    public function transform(Group $group): array
+    {
+        return [
+            'id' => $group->getId(),
+            'name' => $group->getName(),
+            'created_at' => $group->getCreatedAt()->format('c'),
+        ];
+    }
+
+    public function includeUsers(Group $group)
+    {
+        return $this->collection($group->getUsers(), new UserTransformer());
+    }
+}
+```
+
+### 8.7 Fractal Manager naudojimas ADR veiksmuose
+
+**ListAction su galimybės filtruoti įdėtinus resursus:**
+```php
+// src/Action/User/ListAction.php
+namespace App\Action\User;
+
+use App\Fixture\FixtureLoader;
+use App\Entity\User;
+use App\Responder\JsonHalResponder;
 use League\Fractal\Manager;
 use League\Fractal\Resource\Collection;
 use League\Fractal\Serializer\ArraySerializer;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 
-$fractal = new Manager();
-$fractal->setSerializer(new ArraySerializer());
+class ListAction
+{
+    private FixtureLoader $loader;
 
-// Parse ?include=posts,group from query params
-if ($include = $request->getQueryParams()['include'] ?? null) {
-    $fractal->parseIncludes($include);
+    public function __construct(FixtureLoader $loader)
+    {
+        $this->loader = $loader;
+    }
+
+    public function __invoke(ServerRequestInterface $request): ResponseInterface
+    {
+        // Sukuriamas Fractal Manager
+        $fractal = new Manager();
+        $fractal->setSerializer(new ArraySerializer());
+
+        // Pasirenkami įdėtini resursai iš ?include=posts,group
+        $params = $request->getQueryParams();
+        if (isset($params['include'])) {
+            $fractal->parseIncludes($params['include']);
+        }
+
+        // Gaunami duomenys (čia iš FixtureLoader, realiame - iš DB)
+        $users = $this->loader->makeMany(User::class, 5);
+
+        // Transfomuojama su UserTransformer
+        $resource = new Collection($users, new \App\Transformer\Resource\UserTransformer());
+        $data = $fractal->createData($resource)->toArray();
+
+        // Grąžinamas HAL atsakymas
+        return JsonHalResponder::collection('users', $data['data'] ?? [], [
+            'total' => count($data['data'] ?? []),
+            'count' => count($data['data'] ?? []),
+        ]);
+    }
 }
-
-$resource = new Collection($users, new UserTransformer());
-$data = $fractal->createData($resource)->toArray();
 ```
 
-### 8.4 Kernel Routes Registration
+**ShowAction su dinaminiais įdėtiniais resursais:**
+```php
+// src/Action/User/ShowAction.php
+namespace App\Action\User;
+
+use App\Entity\User;
+use App\Responder\JsonHalResponder;
+use League\Fractal\Manager;
+use League\Fractal\Resource\Item;
+use League\Fractal\Serializer\ArraySerializer;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+
+class ShowAction
+{
+    public function __invoke(ServerRequestInterface $request): ResponseInterface
+    {
+        $id = $request->getAttribute('id');
+
+        if (!$id || !is_numeric($id)) {
+            return JsonHalResponder::badRequest('Invalid user ID');
+        }
+
+        // Dummy user - realioje reikėtų EntityManager
+        $user = new User();
+        $user->setId((int)$id);
+        $user->setEmail('user@example.com');
+        $user->setRoles(['ROLE_USER']);
+
+        $fractal = new Manager();
+        $fractal->setSerializer(new ArraySerializer());
+
+        // ?include=posts,group
+        $params = $request->getQueryParams();
+        if (isset($params['include'])) {
+            $fractal->parseIncludes($params['include']);
+        }
+
+        $resource = new Item($user, new \App\Transformer\Resource\UserTransformer());
+        $data = $fractal->createData($resource)->toArray();
+
+        return JsonHalResponder::resource(
+            'user',
+            (string)$id,
+            $data['data'] ?? [],
+            ['collection' => '/api/users']
+        );
+    }
+}
+```
+
+### 8.8 JsonHalResponder metodai
+
+```php
+namespace App\Responder;
+
+use Laminas\Diactoros\Response\JsonResponse;
+
+class JsonHalResponder
+{
+    // Vienas resursas (200 OK)
+    public static function resource(
+        string $type,       // "user", "post", "group"
+        string $id,
+        array $attributes,
+        array $links = [],
+        array $embedded = []
+    ): JsonResponse { ... }
+
+    // Kolekcija (200 OK)
+    public static function collection(
+        string $type,
+        array $items,
+        array $meta = [],
+        array $links = []
+    ): JsonResponse { ... }
+
+    // Sukurtas resursas (201 Created)
+    public static function created(string $type, string $id, array $attributes): JsonResponse
+    {
+        return self::resource($type, $id, $attributes)->withStatus(201);
+    }
+
+    // Tuščias atsakymas (204 No Content)
+    public static function noContent(): JsonResponse { ... }
+
+    // Klaidos (400/401/403/404/422/500)
+    public static function badRequest(string $detail = ''): JsonResponse;
+    public static function notFound(string $detail = ''): JsonResponse;
+    public static function unauthorized(string $detail = 'Unauthorized'): JsonResponse;
+    public static function forbidden(string $detail = 'Forbidden'): JsonResponse;
+    public static function unprocessableEntity(array $errors): JsonResponse;
+}
+```
+
+### 8.9 Užklausų pavyzdžiai
+
+**GET /api/users** - visi vartotojai:
+```bash
+curl -X GET http://localhost:8000/api/users
+```
+
+**GET /api/users?include=posts** - vartotojai su postais:
+```bash
+curl -X GET "http://localhost:8000/api/users?include=posts"
+```
+
+**GET /api/users?include=posts,group** - vartotojai su visais ryšiais:
+```bash
+curl -X GET "http://localhost:8000/api/users?include=posts,group"
+```
+
+**POST sukurti vartotoją:**
+```bash
+curl -X POST http://localhost:8000/api/users \
+  -H "Content-Type: application/json" \
+  -d '{"email":"new@versliukai.lt","password":"secret123"}'
+```
+
+**PUT pilnam atnaujinimui:**
+```bash
+curl -X PUT http://localhost:8000/api/users/1 \
+  -H "Content-Type: application/json" \
+  -d '{"email":"updated@versliukai.lt","roles":["ROLE_ADMIN"]}'
+```
+
+**PATCH daliniam atnaujinimui:**
+```bash
+curl -X PATCH http://localhost:8000/api/users/1 \
+  -H "Content-Type: application/json" \
+  -d '{"email":"patched@versliukai.lt"}'
+```
+
+**DELETE ištrinti:**
+```bash
+curl -X DELETE http://localhost:8000/api/users/1
+```
+
+### 8.10 Middleware saugumas
+
+Žr. skyrių #7 PSR Middleware Security.
+
+### 8.11 Kernel maršrutų registracija
 
 ```php
 // src/App/Kernel.php
