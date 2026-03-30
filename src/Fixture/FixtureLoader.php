@@ -73,7 +73,7 @@ class FixtureLoader
     {
         $connection = $this->entityManager->getConnection();
         $platform = $connection->getDatabasePlatform();
-        
+
         $connection->executeStatement(
             $platform->getTruncateTableSQL('users', true)
         );
