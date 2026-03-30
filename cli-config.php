@@ -1,4 +1,5 @@
 <?php
+
 use Doctrine\ORM\Tools\Console\ConsoleRunner;
 
 // Set error reporting
@@ -28,7 +29,7 @@ $doctrineConfig = new Configuration();
 // Set up metadata driver using AnnotationReader
 // Using __DIR__ to correctly locate potential entity directories if needed
 $driver = new AnnotationDriver(
-    new AnnotationReader(), 
+    new AnnotationReader(),
     false
 );
 $doctrineConfig->setMetadataDriverImpl($driver);

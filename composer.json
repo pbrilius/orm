@@ -45,12 +45,12 @@
       "Oryx\\ORM\\Tests\\": "tests/"
     }
   },
-    "scripts": {
-        "cs-check": "php-cs-fixer fix --dry-run --diff",
-        "cs-fix": "php-cs-fixer fix",
-        "stan": "phpstan analyse src tests",
-        "test": "phpunit"
-    },
+"scripts": {
+    "cs-check": "php-cs-fixer fix --dry-run --diff --allow-unsupported-php-version=no",
+    "cs-fix": "php-cs-fixer fix --allow-unsupported-php-version=no",
+    "stan": "phpstan analyse src tests",
+    "test": "phpunit"
+},
   "minimum-stability": "dev",
   "prefer-stable": true
 }
