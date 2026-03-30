@@ -336,31 +336,270 @@ $user = $loader->createAndPersist(User::class);
 
 ---
 
-## 🔮 RESTful vs AJAX: The Great Debate
-
-### RESTful (Traditional Wizard)
+## 🔬 STEM CRUD: Architectural Patterns Spectrum
 
 ```
-GET    /api/users          → List all wizards
-GET    /api/users/1        → Show wizard by ID
-POST   /api/users          → Enroll new wizard
-PUT    /api/users/1       → Update entire wizard record
-DELETE /api/users/1       → Expel wizard
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    THE ARCHITECTURAL SPECTRUM                                 ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║                                                                              ║
+║   ┌─────────────┐     ┌─────────────┐     ┌─────────────┐                ║
+║   │   MVC       │     │   ADR       │     │   SAPI      │                ║
+║   │ (Classic)   │ ←→  │ (API-First)│ ←→  │ (Async)     │                ║
+║   ├─────────────┤     ├─────────────┤     ├─────────────┤                ║
+║   │ • Full HTML │     │ • JSON:API  │     │ • AJAX      │                ║
+║   │ • SSR       │     │ • REST      │     │ • SPA       │                ║
+║   │ • Stateless │     │ • Stateless │     │ • Stateful  │                ║
+║   └─────────────┘     └─────────────┘     └─────────────┘                ║
+║         ↑                    ↑                    ↑                          ║
+║         └──────────────────┴────────────────────┘                        ║
+║                          ↓                                                 ║
+║               ┌─────────────────────┐                                      ║
+║               │      PWA           │                                      ║
+║               │  (Progressive)     │                                      ║
+║               ├─────────────────────┤                                      ║
+║               │ • Offline-first     │                                      ║
+║               │ • Installable       │                                      ║
+║               │ • Web + Native     │                                      ║
+║               └─────────────────────┘                                      ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
 ```
 
-### AJAX/SPAs (Modern Sorcerer)
+### 1️⃣ MVC (Model-View-Controller) — Classic Web
+
+**When to use:** Traditional server-rendered applications, SEO-critical pages.
+
+```php
+// Controller receives request, processes via Model, renders View
+class UserController extends AbstractController
+{
+    public function index(): void
+    {
+        $users = $this->repository->findAll();
+        $this->render('users/index', ['users' => $users]);
+    }
+}
+```
+
+| Pros | Cons |
+|------|------|
+| ✅ SEO-friendly | ❌ Page reloads |
+| ✅ Simple architecture | ❌ Higher server load |
+| ✅ Persistent state via sessions | ❌ Less interactive |
+| ✅ Full page refresh | ❌ Slower UX |
+
+### 2️⃣ ADR (Action-Domain-Responder) — API-First
+
+**When to use:** Modern APIs, microservices, decoupled frontends.
 
 ```
-GET    /api/users          → List wizards (cached client-side)
-PATCH  /api/users/1        → Change wizard's house only
+╔════════════════════════════════════════════════════════════════╗
+║                    ADR FLOW DIAGRAM                            ║
+╠════════════════════════════════════════════════════════════════╣
+║                                                                ║
+║   Request ──▶ Action ──▶ Domain ──▶ Responder ──▶ Response   ║
+║                    │          │            │                    ║
+║                    ↓          ↓            ↓                    ║
+║              Validation   Business    JSON:API                   ║
+║                          Logic       Output                     ║
+╚════════════════════════════════════════════════════════════════╝
 ```
 
-| Aspect | RESTful | AJAX/SPAs |
-|--------|---------|-----------|
-| **State** | Client stores everything | Server manages state |
-| **Payload** | Full resource | Only changes |
-| **Caching** | HTTP cache | LocalStorage/IndexedDB |
-| **Complexity** | Simpler protocol | Complex client |
+**Our ADR Actions (JSON:API format):**
+
+```php
+// ListAction → GET /api/users
+class ListAction
+{
+    public function __invoke(ServerRequestInterface $request): JsonResponse
+    {
+        $users = $this->loader->makeMany(User::class, 5);
+        $resource = new Collection($users, new UserTransformer());
+        $data = $this->fractal->createData($resource)->toArray();
+        return new JsonResponse($data, 200, [
+            'Content-Type' => 'application/vnd.api+json',
+        ]);
+    }
+}
+```
+
+**CRUD Endpoints:**
+
+| Method | Endpoint | Action | Response |
+|--------|----------|--------|----------|
+| `GET` | `/api/users` | ListAction | `200 + JSON:API collection` |
+| `GET` | `/api/users/{id}` | ShowAction | `200 + JSON:API item` |
+| `POST` | `/api/users` | CreateAction | `201 + JSON:API item` |
+| `PUT` | `/api/users/{id}` | UpdateAction | `200 + JSON:API item` |
+| `DELETE` | `/api/users/{id}` | DeleteAction | `204 No Content` |
+
+**JSON:API Response Format:**
+
+```json
+{
+  "data": [
+    {
+      "type": "users",
+      "id": "1",
+      "attributes": {
+        "email": "user@example.com",
+        "roles": ["ROLE_USER"],
+        "created_at": "2024-01-15T10:30:00Z"
+      }
+    }
+  ],
+  "meta": {
+    "total": 25
+  }
+}
+```
+
+### 3️⃣ AJAX/SPA — Asynchronous Client
+
+**When to use:** Real-time apps, dashboards, interactive UIs.
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                    SPA ARCHITECTURE                          │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│   Browser (React/Vue/Svelte)                                 │
+│        │                                                     │
+│        ├── GET /api/users ──────────────▶ Oryx ADR API      │
+│        │                                                     │
+│        ├── POST /api/users ───────────▶ Oryx ADR API        │
+│        │                                                     │
+│        └── PATCH /api/users/1 ──────────▶ Oryx ADR API      │
+│                                                              │
+│   State Management (Redux/Pinia/Store)                      │
+│        │                                                     │
+│        ├── Optimistic Updates                                │
+│        ├── Local Cache (React Query/SWR)                    │
+│        └── IndexedDB (offline support)                       │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**AJAX vs REST Payload Comparison:**
+
+| Aspect | REST (PUT) | AJAX (PATCH) |
+|--------|------------|--------------|
+| **Method** | PUT | PATCH |
+| **Payload** | Full user | Only changed fields |
+| **Bandwidth** | 500 bytes | 50 bytes |
+| **Example** | `{"id":1,"email":"a","roles":[],"password":"x"}` | `{"email":"new@example.com"}` |
+
+### 4️⃣ PWA (Progressive Web App) — Native-Like
+
+**When to use:** Mobile-first apps, offline-first requirements, installable apps.
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                    PWA FEATURES                              │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│   ┌─────────────┐  ┌─────────────┐  ┌─────────────┐       │
+│   │   Service   │  │   Web App   │  │   Manifest  │       │
+│   │   Worker    │  │   Cache     │  │   JSON      │       │
+│   ├─────────────┤  ├─────────────┤  ├─────────────┤       │
+│   │ Background  │  │ Static +    │  │ Installable │       │
+│   │ Sync        │  │ Dynamic     │  │ Home Screen │       │
+│   │ Offline     │  │ Files       │  │ Icons       │       │
+│   └─────────────┘  └─────────────┘  └─────────────┘       │
+│                                                              │
+│   manifest.json (auto-served at /manifest.json)             │
+│   {                                                         │
+│     "name": "Oryx ORM App",                                │
+│     "short_name": "OryxApp",                               │
+│     "display": "standalone",                                │
+│     "start_url": "/"                                       │
+│   }                                                         │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### 📊 Pattern Comparison Matrix
+
+| Aspect | MVC | ADR API | AJAX/SPA | PWA |
+|--------|-----|---------|----------|-----|
+| **Rendering** | Server | None | Client | Client |
+| **State** | Stateless | Stateless | Stateful | Stateful |
+| **SEO** | ✅ Excellent | ✅ With SSR | ❌ Needs SSR | ⚠️ Hybrid |
+| **Performance** | ⚠️ Reload | ✅ Fast | ✅ Fast | ✅ Fastest |
+| **Offline** | ❌ No | ❌ No | ⚠️ Limited | ✅ Full |
+| **Complexity** | Low | Medium | High | Very High |
+| **Bundle Size** | 0 KB | 0 KB | 100-500 KB | 100-500 KB |
+
+### 🎯 When to Use Each Pattern
+
+```
+╔════════════════════════════════════════════════════════════════╗
+║                DECISION FLOWCHART                            ║
+╠════════════════════════════════════════════════════════════════╣
+║                                                                ║
+║   Need SEO + Simple? ──▶ Use MVC                            ║
+║         │                                                    ║
+║         ▼                                                    ║
+║   API for Mobile/Native? ──▶ Use ADR                         ║
+║         │                                                    ║
+║         ▼                                                    ║
+║   Real-time + Interactive? ──▶ Use AJAX/SPA                   ║
+║         │                                                    ║
+║         ▼                                                    ║
+║   Offline + Installable? ──▶ Use PWA                          ║
+║                                                                ║
+╚════════════════════════════════════════════════════════════════╝
+```
+
+### 🔗 The Unified Stack (Our Web Skeleton)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    ORYX WEB SKELETON                            │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   ┌─────────────────────────────────────────────────────────┐   │
+│   │                    Frontend Layer                        │   │
+│   │  ┌─────────┐  ┌─────────┐  ┌─────────┐               │   │
+│   │  │   MVC   │  │   SPA   │  │   PWA   │               │   │
+│   │  │ (Pages) │  │ (React) │  │ (Vue)   │               │   │
+│   │  └────┬────┘  └────┬────┘  └────┬────┘               │   │
+│   │       │              │              │                   │   │
+│   └───────┼──────────────┼──────────────┼───────────────────┘   │
+│           │              │              │                       │
+│           └──────────────┴──────────────┘                       │
+│                          │                                     │
+│   ┌─────────────────────▼─────────────────────────────────┐  │
+│   │                    ADR API Layer                          │  │
+│   │  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐           │  │
+│   │  │  List  │ │  Show  │ │ Create │ │Delete  │           │  │
+│   │  └────────┘ └────────┘ └────────┘ └────────┘           │  │
+│   │         │           │           │           │            │  │
+│   └─────────┼───────────┼───────────┼───────────┼────────────┘  │
+│             │           │           │           │              │
+│   ┌─────────▼───────────▼───────────▼───────────▼────────────┐  │
+│   │                    Domain Layer                          │  │
+│   │  ┌─────────┐  ┌─────────┐  ┌─────────┐                │  │
+│   │  │  User   │  │  Post   │  │  Group  │   Entity       │  │
+│   │  └────┬────┘  └────┬────┘  └────┬────┘                │  │
+│   │       │            │            │                       │  │
+│   │  ┌────▼────────────▼────────────▼────┐                │  │
+│   │  │        Doctrine ORM               │                │  │
+│   │  │   EntityManager + UnitOfWork      │                │  │
+│   │  └─────────────────┬────────────────┘                │  │
+│   │                    │                                   │  │
+│   └────────────────────┼───────────────────────────────────┘  │
+│                        │                                        │
+│   ┌────────────────────▼───────────────────────────────────┐  │
+│   │                  Database Layer                          │  │
+│   │  ┌──────────┐  ┌──────────┐  ┌──────────┐             │  │
+│   │  │ MariaDB  │  │  MySQL  │  │ SQLite   │   (dev)    │  │
+│   │  └──────────┘  └──────────┘  └──────────┘             │  │
+│   └──────────────────────────────────────────────────────────┘  │
+│                                                                  │
+└──────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
