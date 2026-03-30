@@ -233,6 +233,83 @@ class AdrRoutes
 }
 ```
 
+**MVC Routes atskirai:**
+```php
+// src/Routing/MvcRoutes.php
+namespace App\Routing;
+
+use App\Http\Router;
+use App\Http\Request;
+use App\Http\Response;
+use App\Controller\UserController;
+use Doctrine\ORM\EntityManager;
+
+class MvcRoutes
+{
+    private Router $router;
+    private array $controllers;
+
+    public function __construct(EntityManager $em)
+    {
+        $this->router = new Router();
+        $this->controllers = [
+            'user' => new UserController($em),
+        ];
+        $this->register();
+    }
+
+    public function getRouter(): Router
+    {
+        return $this->router;
+    }
+
+    private function register(): void
+    {
+        $this->router->get('/', function (Request $req) {
+            return new Response($this->view->render('home'));
+        });
+
+        $this->router->get('/users', function (Request $req) {
+            $data = $this->controllers['user']->index();
+            return new Response($this->view->render('users/index', $data));
+        });
+
+        $this->router->get('/users/{id}', function (Request $req, array $params) {
+            $user = $this->controllers['user']->show((int) $params['id']);
+            return new Response($this->view->render('users/show', ['user' => $user]));
+        });
+    }
+}
+```
+
+**Abiejų routing'ų sujungimas Kernel'yje:**
+```php
+// src/App/Kernel.php
+class Kernel
+{
+    private AdrRoutes $adrRoutes;
+    private MvcRoutes $mvcRoutes;
+
+    public function __construct(EntityManager $em)
+    {
+        $this->adrRoutes = new AdrRoutes();
+        $this->mvcRoutes = new MvcRoutes($em);
+    }
+
+    public function handle(ServerRequestInterface $request): ResponseInterface
+    {
+        // ADR maršrutai (API)
+        if (str_starts_with($request->getUri()->getPath(), '/api/')) {
+            return $this->adrRoutes->getRouter()->dispatch($request);
+        }
+        // MVC maršrutai (HTML)
+        return $this->mvcRoutes->getRouter()->dispatch($request);
+    }
+}
+```
+
+### 4.2 ADR Actions (Invokable)
+
 ### 4.2 ADR Actions (Invokable)
 
 ```php
